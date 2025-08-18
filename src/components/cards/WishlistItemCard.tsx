@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, Package, AlertCircle, ExternalLink } from 'lucide-react';
+import { Package, AlertCircle, ExternalLink } from 'lucide-react';
 
 interface WishlistItem {
   id: string;
@@ -13,7 +13,6 @@ interface WishlistItem {
   quantity_needed: number;
   quantity_received: number;
   priority_level: 'low' | 'medium' | 'high' | 'urgent';
-  expiry_date?: string;
   foundation_name?: string;
   foundation_id?: string;
   images?: string[];
@@ -31,7 +30,6 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
 }) => {
   const progressPercentage = (item.quantity_received / item.quantity_needed) * 100;
   const isUrgent = item.priority_level === 'urgent';
-  const isExpiringSoon = item.expiry_date && new Date(item.expiry_date) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -76,7 +74,7 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
           </Badge>
 
           {/* Urgent Warning */}
-          {(isUrgent || isExpiringSoon) && (
+          {isUrgent && (
             <div className="absolute top-3 right-3 bg-destructive/90 text-destructive-foreground p-2 rounded-lg shadow-sm">
               <AlertCircle className="h-4 w-4" />
             </div>
@@ -117,21 +115,6 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
               เหลืออีก {item.quantity_needed - item.quantity_received} ชิ้น
             </p>
           </div>
-
-          {/* Expiry Date */}
-          {item.expiry_date && (
-            <div className="flex items-center text-muted-foreground text-sm mb-4">
-              <Calendar className="h-4 w-4 mr-2" />
-              <span>
-                หมดเขต: {new Date(item.expiry_date).toLocaleDateString('th-TH')}
-              </span>
-              {isExpiringSoon && (
-                <Badge variant="destructive" className="ml-2 text-xs">
-                  ใกล้หมดเขต
-                </Badge>
-              )}
-            </div>
-          )}
 
           <Button asChild className="w-full group" variant="default">
             <Link to={`/wishlist/${item.id}`}>

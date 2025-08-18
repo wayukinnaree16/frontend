@@ -20,9 +20,9 @@ import WriteReview from "./pages/donor/WriteReview";
 import PledgeForm from "./pages/donor/PledgeForm";
 import WishlistList from "./pages/wishlist/WishlistList";
 import CreateEditWishlist from "./pages/foundation/CreateEditWishlist";
-import Messages from "./pages/foundation/Messages";
 import UserDetail from "./pages/admin/UserDetail";
 import FoundationVerification from "./pages/admin/FoundationVerification";
+import FoundationReview from "./pages/admin/FoundationReview";
 // Donor Pages
 import MyPledges from "./pages/donor/MyPledges";
 import Profile from "./pages/donor/Profile";
@@ -39,7 +39,10 @@ import FoundationDocuments from "./pages/foundation/Documents";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
 import AdminFoundations from "./pages/admin/Foundations";
-import AdminReviews from "./pages/admin/Reviews";
+import AdminDonations from "./pages/admin/Donations";
+import AdminFoundationTypes from "./pages/admin/FoundationTypes";
+import AdminItemCategories from "./pages/admin/ItemCategories";
+import AdminLayout from "./components/layout/AdminLayout";
 
 import NotFound from "./pages/NotFound";
 
@@ -52,9 +55,9 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Index />} />
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/foundations" element={<FoundationsList />} />
@@ -81,19 +84,22 @@ const App = () => (
             <Route path="/foundation/pledges" element={<FoundationPledges />} />
             <Route path="/foundation/documents" element={<FoundationDocuments />} />
             <Route path="/foundation/create-edit-wishlist" element={<CreateEditWishlist />} />
-            <Route path="/foundation/messages" element={<Messages />} />
 
             {/* System Admin Routes */}
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/foundations" element={<AdminFoundations />} />
-            <Route path="/admin/reviews" element={<AdminReviews />} />
-            <Route path="/admin/users/:id" element={<UserDetail />} />
-            <Route path="/admin/foundation-verification/:id" element={<FoundationVerification />} />
+            <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+            <Route path="/admin/dashboard" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+            <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
+            <Route path="/admin/foundations" element={<AdminLayout><AdminFoundations /></AdminLayout>} />
+            <Route path="/admin/donations" element={<AdminLayout><AdminDonations /></AdminLayout>} />
+            <Route path="/admin/foundation-types" element={<AdminLayout><AdminFoundationTypes /></AdminLayout>} />
+            <Route path="/admin/item-categories" element={<AdminLayout><AdminItemCategories /></AdminLayout>} />
+            <Route path="/admin/users/:id" element={<AdminLayout><UserDetail /></AdminLayout>} />
+            <Route path="/admin/foundation-verification/:id" element={<AdminLayout><FoundationVerification /></AdminLayout>} />
+            <Route path="/admin/foundation-review/:foundationId" element={<AdminLayout><FoundationReview /></AdminLayout>} />
 
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* Catch-all route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

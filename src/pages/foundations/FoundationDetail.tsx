@@ -17,7 +17,7 @@ const FoundationDetail = () => {
     if (!u) return '';
     if (u.startsWith('http://') || u.startsWith('https://') || u.startsWith('blob:')) return u;
     const path = u.startsWith('/') ? u : `/${u}`;
-    return `http://localhost:3001${path}`;
+    return `http://localhost:3000${path}`;
   };
   const [foundation, setFoundation] = useState<any>(null);
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
@@ -184,10 +184,9 @@ const FoundationDetail = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="wishlist" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="wishlist">รายการที่ต้องการ</TabsTrigger>
             <TabsTrigger value="about">เกี่ยวกับมูลนิธิ</TabsTrigger>
-            <TabsTrigger value="reviews">รีวิว</TabsTrigger>
           </TabsList>
           
           <TabsContent value="wishlist" className="mt-6">
@@ -215,36 +214,6 @@ const FoundationDetail = () => {
                 <h4 className="font-semibold mb-2">ที่อยู่</h4>
                 <p className="text-muted-foreground">{foundation.address}</p>
               </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="reviews" className="mt-6">
-            <div className="space-y-4">
-              {reviews.map((review) => (
-                <div key={review.id} className="bg-white rounded-xl shadow-soft p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="flex items-center mb-2">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star 
-                              key={i} 
-                              className={`h-4 w-4 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-                            />
-                          ))}
-                        </div>
-                        <span className="ml-2 text-sm text-muted-foreground">
-                          โดย {review.reviewer}
-                        </span>
-                      </div>
-                      <p className="text-muted-foreground">{review.comment}</p>
-                    </div>
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(review.date).toLocaleDateString('th-TH')}
-                    </span>
-                  </div>
-                </div>
-              ))}
             </div>
           </TabsContent>
         </Tabs>

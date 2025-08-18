@@ -20,9 +20,6 @@ export const FoundationSideMenu: React.FC = () => (
       <Link to="/foundation/documents" className="flex items-center gap-3 text-foreground hover:text-primary font-medium">
         <FileText className="h-5 w-5" /> จัดการเอกสาร
       </Link>
-      <Link to="/foundation/messages" className="flex items-center gap-3 text-foreground hover:text-primary font-medium">
-        <MessageCircle className="h-5 w-5" /> ข้อความ
-      </Link>
     </nav>
   </aside>
-); 
+);

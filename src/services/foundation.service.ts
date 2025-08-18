@@ -42,7 +42,6 @@ export interface UpdateWishlistItemRequest {
   description?: string;
   quantity_needed?: number;
   priority_level?: 'low' | 'medium' | 'high' | 'urgent';
-  expiry_date?: string;
   images?: string[];
   quantity_unit?: string; // Added quantity_unit
 }
@@ -70,22 +69,24 @@ export interface RejectPledgeRequest {
 
 export interface CreateDocumentRequest {
   document_type: string;
-  document_url: string;
+  document_url?: string; // No longer required from the form
   document_name: string;
-  expiry_date?: string;
   description?: string;
+  document?: File; // The actual file
 }
 
 export interface Document {
   id: number;
+  document_id?: number;
   document_type: string;
   document_url: string;
   document_name: string;
-  expiry_date?: string;
   description?: string;
-  status: 'pending_review' | 'approved' | 'rejected';
+  verification_status_by_admin: 'pending_review' | 'approved' | 'rejected';
+  admin_remarks?: string;
   foundation_id: number;
-  created_at: string;
+  upload_date: string;
+  created_at?: string;
 }
 
 class FoundationService {
@@ -120,8 +121,22 @@ class FoundationService {
   }
 
   // Pledges
-  async getReceivedPledges(): Promise<ApiResponse<{ pledges: ReceivedPledge[] }>> {
-    return await apiClient.get('/api/foundation/pledges/received');
+  async getReceivedPledges(status?: string | string[]): Promise<ApiResponse<{ pledges: ReceivedPledge[] }>> {
+    const params = new URLSearchParams();
+    
+    if (status) {
+      if (Array.isArray(status)) {
+        // ส่งแต่ละ status เป็น parameter แยก
+        status.forEach(s => params.append('status', s));
+      } else {
+        params.append('status', status);
+      }
+    }
+    
+    const queryString = params.toString();
+    const url = queryString ? `/api/foundation/pledges/received?${queryString}` : '/api/foundation/pledges/received';
+    
+    return await apiClient.get(url);
   }
 
   async approvePledge(pledgeId: string | number): Promise<ApiResponse> {
@@ -137,8 +152,12 @@ class FoundationService {
   }
 
   // Documents
-  async uploadDocument(data: CreateDocumentRequest): Promise<ApiResponse<{ document: Document }>> {
-    return await apiClient.post('/api/foundation/documents', data);
+  async uploadDocument(data: FormData): Promise<ApiResponse<{ document: Document }>> {
+    return await apiClient.post('/api/foundation/documents', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   }
 
   async getMyDocuments(): Promise<ApiResponse<{ documents: Document[] }>> {

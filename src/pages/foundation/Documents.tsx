@@ -12,6 +12,10 @@ import { useForm } from 'react-hook-form';
 import { toast } from '@/hooks/use-toast';
 import foundationService, { Document as FoundationDocument, CreateDocumentRequest } from '@/services/foundation.service';
 
+interface CreateDocumentRequestWithDocumentType extends CreateDocumentRequest {
+  document_type: string;
+}
+
 const DOCUMENT_TYPES = [
   { value: 'license', label: 'ใบอนุญาตมูลนิธิ' },
   { value: 'registration', label: 'หนังสือรับรองการจดทะเบียน' },
@@ -20,7 +24,7 @@ const DOCUMENT_TYPES = [
 
 const statusLabel: Record<string, string> = {
   pending_review: 'รอตรวจสอบ',
-  approved: 'อนุมัติแล้ว',
+  approved: 'ตรวจสอบแล้ว',
   rejected: 'ถูกปฏิเสธ',
 };
 
@@ -30,13 +34,12 @@ const FoundationDocuments = () => {
   const [open, setOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const form = useForm<CreateDocumentRequest>({
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const form = useForm<CreateDocumentRequestWithDocumentType>({
     defaultValues: {
-      document_type: '',
       document_url: '',
       document_name: '',
-      expiry_date: '',
-      description: '',
+      document_type: '',
     },
   });
 
@@ -44,7 +47,9 @@ const FoundationDocuments = () => {
     setLoading(true);
     try {
       const res = await foundationService.getMyDocuments();
-      setDocuments(Array.isArray(res.data) ? res.data : []);
+      // Backend returns documents array directly in res.data
+      const documents = Array.isArray(res.data) ? res.data : (res.data?.documents || []);
+      setDocuments(documents);
     } catch (e: any) {
       toast({ title: 'เกิดข้อผิดพลาด', description: e?.message || 'ไม่สามารถโหลดเอกสารได้', });
     } finally {
@@ -54,14 +59,49 @@ const FoundationDocuments = () => {
 
   useEffect(() => {
     fetchDocuments();
+    
+    // Add event listeners to refetch documents when user returns to this page
+    const handleWindowFocus = () => {
+      fetchDocuments();
+    };
+    
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchDocuments();
+      }
+    };
+    
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Cleanup event listeners on component unmount
+    return () => {
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const onSubmit = async (data: CreateDocumentRequest) => {
+    if (!selectedFile) {
+      toast({ title: 'กรุณาเลือกไฟล์', description: 'คุณต้องเลือกไฟล์เพื่ออัปโหลด', variant: 'destructive' });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('document', selectedFile);
+
+    formData.append('document_name', data.document_name);
+    formData.append('document_type', data.document_type);
+
+
     try {
-      await foundationService.uploadDocument(data);
+      // Note: We are assuming foundationService.uploadDocument can handle FormData.
+      // This will likely require changes in foundation.service.ts and the backend.
+      await foundationService.uploadDocument(formData as any);
       toast({ title: 'อัปโหลดเอกสารสำเร็จ' });
       setOpen(false);
       form.reset();
+      setSelectedFile(null);
       fetchDocuments();
     } catch (e: any) {
       toast({ title: 'เกิดข้อผิดพลาด', description: e?.message || 'ไม่สามารถอัปโหลดเอกสารได้', });
@@ -101,35 +141,35 @@ const FoundationDocuments = () => {
                   <DialogDescription>กรอกข้อมูลเอกสารให้ครบถ้วน</DialogDescription>
                 </DialogHeader>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <div>
-                    <label className="block mb-1">ประเภทเอกสาร</label>
-                    <Select value={form.watch('document_type')} onValueChange={v => form.setValue('document_type', v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="เลือกประเภทเอกสาร" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DOCUMENT_TYPES.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+
                   <div>
                     <label className="block mb-1">ชื่อเอกสาร</label>
                     <Input {...form.register('document_name', { required: true })} placeholder="เช่น ใบอนุญาตมูลนิธิ" />
                   </div>
                   <div>
-                    <label className="block mb-1">ลิงก์เอกสาร (URL)</label>
-                    <Input {...form.register('document_url', { required: true })} placeholder="https://..." />
+                    <label className="block mb-1">ประเภทเอกสาร</label>
+                    <Select onValueChange={(value) => form.setValue('document_type', value)} value={form.watch('document_type')}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="เลือกประเภทเอกสาร" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DOCUMENT_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <label className="block mb-1">วันหมดอายุ (ถ้ามี)</label>
-                    <Input type="date" {...form.register('expiry_date')} />
+                    <label className="block mb-1">ไฟล์เอกสาร</label>
+                    <Input 
+                      type="file" 
+                      onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)} 
+                      accept="image/*,application/pdf"
+                    />
                   </div>
-                  <div>
-                    <label className="block mb-1">รายละเอียดเพิ่มเติม</label>
-                    <Textarea {...form.register('description')} placeholder="รายละเอียดเพิ่มเติม (ถ้ามี)" />
-                  </div>
+
                   <DialogFooter>
                     <Button type="submit" disabled={form.formState.isSubmitting}>บันทึก</Button>
                   </DialogFooter>
@@ -143,7 +183,7 @@ const FoundationDocuments = () => {
                 <TableRow>
                   <TableHead>ชื่อเอกสาร</TableHead>
                   <TableHead>ประเภท</TableHead>
-                  <TableHead>วันหมดอายุ</TableHead>
+                  <TableHead>รูปภาพ</TableHead>
                   <TableHead>สถานะ</TableHead>
                   <TableHead>ลิงก์</TableHead>
                   <TableHead></TableHead>
@@ -158,8 +198,16 @@ const FoundationDocuments = () => {
                   documents.map((doc: any) => (
                     <TableRow key={doc.document_id}>
                       <TableCell>{doc.document_name}</TableCell>
-                      <TableCell>{doc.document_url ? <a href={doc.document_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">ดูเอกสาร</a> : '-'}</TableCell>
-                      <TableCell>{doc.upload_date ? new Date(doc.upload_date).toLocaleDateString() : '-'}</TableCell>
+                      <TableCell>{DOCUMENT_TYPES.find(type => type.value === doc.document_type)?.label || '-'}</TableCell>
+                      <TableCell>
+                        {doc.document_url ? (
+                          <a href={doc.document_url} target="_blank" rel="noopener noreferrer">
+                            <img src={doc.document_url} alt={doc.document_name} className="h-16 w-16 object-cover" />
+                          </a>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
                       <TableCell>{statusLabel[doc.verification_status_by_admin] || doc.verification_status_by_admin || '-'}</TableCell>
                       <TableCell>{doc.admin_remarks || '-'}</TableCell>
                       <TableCell>

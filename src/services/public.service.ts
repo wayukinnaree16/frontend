@@ -61,15 +61,15 @@ export interface ItemCategory {
 }
 
 export interface WishlistItem {
-  id: number;
-  title: string;
-  description: string;
+  wishlist_item_id: number; // Changed from 'id' to 'wishlist_item_id'
+  item_name: string; // Changed from 'title' to 'item_name'
+  description_detail: string; // Changed from 'description' to 'description_detail'
   quantity_needed: number;
   quantity_received: number;
-  priority_level: 'low' | 'medium' | 'high' | 'urgent';
+  quantity_unit: string; // Added quantity_unit
+  urgency_level: 'normal' | 'urgent' | 'very_urgent'; // Changed from 'priority_level' and updated types
   status: 'open_for_donation' | 'fulfilled' | 'expired';
-  expiry_date?: string;
-  images?: string[];
+  example_image_url?: string; // Changed from 'images' to 'example_image_url'
   foundation?: Foundation;
   foundation_id?: number;
   category?: ItemCategory;

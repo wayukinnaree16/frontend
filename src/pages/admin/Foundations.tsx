@@ -1,158 +1,156 @@
 import React, { useEffect, useState } from 'react';
-import { adminService } from '@/services/admin.service';
-import { publicService } from '@/services/public.service';
-import { SidebarProvider, Sidebar } from '@/components/ui/sidebar';
+import { adminService, PendingFoundation } from '@/services/admin.service';
+import { Foundation } from '@/services/public.service';
 import { Link } from 'react-router-dom';
-
-const adminMenu = [
-  { label: 'Dashboard', to: '/admin/dashboard' },
-  { label: 'ผู้ใช้', to: '/admin/users' },
-  { label: 'มูลนิธิ', to: '/admin/foundations' },
-  { label: 'รีวิว', to: '/admin/reviews' },
-  { label: 'เนื้อหา', to: '/admin/content' },
-];
-
-const TABS = [
-  { key: 'pending', label: 'รอการอนุมัติ' },
-  { key: 'all', label: 'มูลนิธิทั้งหมด' },
-];
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Eye } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from 'date-fns';
+import { th } from 'date-fns/locale';
 
 const AdminFoundations = () => {
-  const [activeTab, setActiveTab] = useState('pending');
-  const [pendingFoundations, setPendingFoundations] = useState<any[]>([]);
-  const [allFoundations, setAllFoundations] = useState<any[]>([]);
+  const [pendingFoundations, setPendingFoundations] = useState<PendingFoundation[]>([]);
+  const [allFoundations, setAllFoundations] = useState<Foundation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPending = async () => {
+    const fetchFoundations = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await adminService.getPendingFoundations();
-        setPendingFoundations(res.data?.foundations || []);
+        const [pendingRes, allRes] = await Promise.all([
+          adminService.getPendingFoundations(),
+          adminService.getAllFoundations()
+        ]);
+        
+        const filteredPending = (pendingRes.data?.foundations || []).filter(
+          (f: PendingFoundation) => f.user?.account_status === 'pending_verification'
+        );
+        setPendingFoundations(filteredPending);
+        setAllFoundations(allRes.data?.foundations || []);
       } catch (e) {
         setError('เกิดข้อผิดพลาดในการโหลดข้อมูลมูลนิธิ');
       } finally {
         setLoading(false);
       }
     };
-    const fetchAll = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // เปลี่ยนจาก publicService.getFoundations เป็น adminService.getAllFoundations
-        const res = await adminService.getAllFoundations();
-        setAllFoundations(res.data?.foundations || []);
-      } catch (e) {
-        setError('เกิดข้อผิดพลาดในการโหลดข้อมูลมูลนิธิ');
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (activeTab === 'pending') fetchPending();
-    else fetchAll();
-  }, [activeTab]);
+    fetchFoundations();
+  }, []);
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge variant="success">อนุมัติแล้ว</Badge>;
+      case 'suspended':
+        return <Badge variant="destructive">ระงับ</Badge>;
+      case 'pending_verification':
+        return <Badge variant="secondary">รอตรวจสอบ</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const renderTable = (foundations: (PendingFoundation | Foundation)[], isPendingTab: boolean) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>ชื่อมูลนิธิ</TableHead>
+          <TableHead>อีเมลผู้ดูแล</TableHead>
+          <TableHead>วันที่สมัคร</TableHead>
+          {!isPendingTab && <TableHead>สถานะ</TableHead>}
+          <TableHead className="text-right">Action</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {foundations.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={isPendingTab ? 4 : 5} className="text-center py-8 text-muted-foreground">
+              {isPendingTab ? 'ยังไม่มีมูลนิธิที่รอการอนุมัติ' : 'ยังไม่มีมูลนิธิในระบบ'}
+            </TableCell>
+          </TableRow>
+        ) : (
+          foundations.map((foundation) => {
+            const id = foundation.foundation_id || (foundation as any).id;
+            const email = (foundation as any).user?.email || foundation.contact_email || '-';
+            const createdAt = foundation.created_at ? format(new Date(foundation.created_at), 'd MMM yyyy', { locale: th }) : '-';
+            let status = (foundation as any).user?.account_status || 'N/A';
+            if (!isPendingTab && status === 'N/A') {
+              status = 'active';
+            }
+            return (
+              <TableRow key={id}>
+                <TableCell className="font-medium">{foundation.foundation_name}</TableCell>
+                <TableCell>{email}</TableCell>
+                <TableCell>{createdAt}</TableCell>
+                {!isPendingTab && <TableCell>{getStatusBadge(status)}</TableCell>}
+                <TableCell className="text-right">
+                  <Button asChild variant="ghost" size="icon">
+                    <Link to={`/admin/foundation-verification/${id}`}>
+                      <Eye className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })
+        )}
+      </TableBody>
+    </Table>
+  );
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen bg-background flex">
-        <Sidebar className="border-r bg-white">
-          <nav className="flex flex-col gap-2 p-4">
-            {adminMenu.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="px-4 py-2 rounded hover:bg-primary/10 text-base font-medium"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </Sidebar>
-        <div className="flex-1">
-          <div className="container mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-4">จัดการมูลนิธิ</h1>
-            <div className="flex gap-2 mb-6">
-              {TABS.map(tab => (
-                <button
-                  key={tab.key}
-                  className={`px-4 py-2 rounded font-medium border ${activeTab === tab.key ? 'bg-primary text-white border-primary' : 'bg-white text-primary border-primary'} transition`}
-                  onClick={() => setActiveTab(tab.key)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            {loading ? (
-              <div>กำลังโหลดข้อมูล...</div>
-            ) : error ? (
-              <div className="text-red-500">{error}</div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white rounded-xl shadow-soft">
-                  <thead>
-                    <tr className="bg-muted">
-                      <th className="py-3 px-4 text-left font-semibold">ชื่อมูลนิธิ</th>
-                      <th className="py-3 px-4 text-left font-semibold">อีเมลผู้ดูแล</th>
-                      <th className="py-3 px-4 text-left font-semibold">วันที่สมัคร</th>
-                      <th className="py-3 px-4 text-left font-semibold">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeTab === 'pending' ? (
-                      pendingFoundations.length === 0 ? (
-                        <tr>
-                          <td colSpan={4} className="text-center py-8 text-muted-foreground">ยังไม่มีมูลนิธิที่รอการยืนยัน</td>
-                        </tr>
-                      ) : (
-                        pendingFoundations.map((foundation) => {
-                          const id = foundation.foundation_id || foundation.id;
-                          const email = foundation.user?.email || foundation.contact_email || '-';
-                          const createdAt = foundation.created_at ? new Date(foundation.created_at).toLocaleDateString('th-TH') : '-';
-                          return (
-                            <tr key={id} className="border-b last:border-0">
-                              <td className="py-3 px-4">{foundation.foundation_name}</td>
-                              <td className="py-3 px-4">{email}</td>
-                              <td className="py-3 px-4">{createdAt}</td>
-                              <td className="py-3 px-4">
-                                <Link to={`/admin/foundation-verification/${id}`} className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition">ตรวจสอบ</Link>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )
-                    ) : (
-                      allFoundations.length === 0 ? (
-                        <tr>
-                          <td colSpan={4} className="text-center py-8 text-muted-foreground">ยังไม่มีมูลนิธิในระบบ</td>
-                        </tr>
-                      ) : (
-                        allFoundations.map((foundation) => {
-                          const id = foundation.foundation_id || foundation.id;
-                          const email = foundation.contact_email || foundation.user?.email || '-';
-                          const createdAt = foundation.created_at ? new Date(foundation.created_at).toLocaleDateString('th-TH') : '-';
-                          return (
-                            <tr key={id} className="border-b last:border-0">
-                              <td className="py-3 px-4">{foundation.foundation_name}</td>
-                              <td className="py-3 px-4">{email}</td>
-                              <td className="py-3 px-4">{createdAt}</td>
-                              <td className="py-3 px-4">
-                                <Link to={`/admin/foundation-verification/${id}`} className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition">ดูรายละเอียด</Link>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+    <>
+      <header className="mb-6">
+        <h1 className="text-3xl font-bold">จัดการมูลนิธิ</h1>
+        <p className="text-muted-foreground">อนุมัติและดูแลมูลนิธิทั้งหมดในระบบ</p>
+      </header>
+
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <p>กำลังโหลด...</p>
         </div>
-      </div>
-    </SidebarProvider>
+      ) : error ? (
+        <div className="text-red-500 text-center">{error}</div>
+      ) : (
+        <Tabs defaultValue="pending">
+          <TabsList>
+            <TabsTrigger value="pending">รอการอนุมัติ ({pendingFoundations.length})</TabsTrigger>
+            <TabsTrigger value="all">มูลนิธิทั้งหมด ({allFoundations.length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="pending">
+            <Card>
+              <CardHeader>
+                <CardTitle>มูลนิธิที่รอการอนุมัติ</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {renderTable(pendingFoundations, true)}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="all">
+            <Card>
+              <CardHeader>
+                <CardTitle>มูลนิธิทั้งหมด</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {renderTable(allFoundations, false)}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      )}
+    </>
   );
 };
 

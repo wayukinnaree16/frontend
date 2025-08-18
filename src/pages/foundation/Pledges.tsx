@@ -8,31 +8,30 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { CheckCircle, XCircle, Truck } from 'lucide-react';
+import { Truck } from 'lucide-react';
 
 const STATUS_TABS = [
-  { key: 'pending', label: 'รออนุมัติ' },
-  { key: 'approved', label: 'อนุมัติแล้ว' },
-  { key: 'rejected', label: 'ปฏิเสธแล้ว' },
-  { key: 'completed', label: 'ได้รับแล้ว' },
+  { key: 'shipping_in_progress', label: 'กำลังจัดส่ง' },
+  { key: 'received_by_foundation', label: 'จัดส่งเสร็จแล้ว' },
 ];
 
 const FoundationPledges = () => {
   const [pledges, setPledges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('pending');
-  const [approveDialog, setApproveDialog] = useState<{ open: boolean, pledge: any | null }>({ open: false, pledge: null });
-  const [rejectDialog, setRejectDialog] = useState<{ open: boolean, pledge: any | null }>({ open: false, pledge: null });
+  const [activeTab, setActiveTab] = useState('shipping_in_progress');
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean, pledge: any | null }>({ open: false, pledge: null });
-  const [rejectReason, setRejectReason] = useState('');
   const [saving, setSaving] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await foundationService.getReceivedPledges();
+      let statusFilter: string | string[] = activeTab;
+      if (activeTab === 'shipping_in_progress') {
+        statusFilter = ['pending_foundation_approval', 'approved_by_foundation', 'shipping_in_progress'];
+      }
+      const res = await foundationService.getReceivedPledges(statusFilter);
       // Map real API response to UI model
       const apiPledges = res.data?.pledges || [];
       const mapped = apiPledges.map((p: any) => ({
@@ -54,15 +53,10 @@ const FoundationPledges = () => {
         tracking_number: p.tracking_number,
         pickup_address_details: p.pickup_address_details,
         pickup_preferred_datetime: p.pickup_preferred_datetime,
-        status:
-          p.status === 'pending_foundation_approval' ? 'pending'
-          : p.status === 'approved_by_foundation' ? 'approved'
-          : p.status === 'rejected_by_foundation' ? 'rejected'
-          : p.status === 'received_by_foundation' ? 'completed'
-          : p.status,
+        status: p.status, // Keep original backend status for logic
+        donor_notes_on_receipt: p.donor_notes_on_receipt,
         pledged_at: p.pledged_at,
         foundation_received_at: p.foundation_received_at,
-        donor_notes_on_receipt: p.donor_notes_on_receipt,
         images: p.images || [],
       }));
       setPledges(mapped);
@@ -75,38 +69,8 @@ const FoundationPledges = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [activeTab]);
 
-  const handleApprove = async () => {
-    if (!approveDialog.pledge) return;
-    setSaving(true);
-    try {
-      await foundationService.approvePledge(approveDialog.pledge.id);
-      toast({ title: 'อนุมัติการบริจาคสำเร็จ' });
-      setApproveDialog({ open: false, pledge: null });
-      fetchData();
-    } catch {
-      toast({ title: 'เกิดข้อผิดพลาด', variant: 'destructive' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleReject = async () => {
-    if (!rejectDialog.pledge) return;
-    setSaving(true);
-    try {
-      await foundationService.rejectPledge(rejectDialog.pledge.id, { rejection_reason_by_foundation: rejectReason });
-      toast({ title: 'ปฏิเสธการบริจาคสำเร็จ' });
-      setRejectDialog({ open: false, pledge: null });
-      setRejectReason('');
-      fetchData();
-    } catch {
-      toast({ title: 'เกิดข้อผิดพลาด', variant: 'destructive' });
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleConfirm = async () => {
     if (!confirmDialog.pledge) return;
@@ -114,8 +78,11 @@ const FoundationPledges = () => {
     try {
       await foundationService.confirmReceipt(confirmDialog.pledge.id);
       toast({ title: 'ยืนยันรับของสำเร็จ' });
+      // Immediately remove the confirmed pledge from the current list for immediate UI update
+      setPledges(prevPledges => prevPledges.filter(p => p.id !== confirmDialog.pledge.id));
       setConfirmDialog({ open: false, pledge: null });
-      fetchData();
+      // Removed: setActiveTab('received_by_foundation'); // Do not automatically switch to 'จัดส่งเสร็จแล้ว' tab
+      fetchData(); // Re-fetch data for the current tab to ensure consistency
     } catch {
       toast({ title: 'เกิดข้อผิดพลาด', variant: 'destructive' });
     } finally {
@@ -123,22 +90,27 @@ const FoundationPledges = () => {
     }
   };
 
+
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="text-yellow-600 border-yellow-400">รออนุมัติ</Badge>;
-      case 'approved':
-        return <Badge variant="outline" className="text-green-600 border-green-400">อนุมัติแล้ว</Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="text-red-600 border-red-400">ถูกปฏิเสธ</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="text-blue-600 border-blue-400">รับของแล้ว</Badge>;
+      case 'pending_foundation_approval':
+        return <Badge variant="outline" className="text-yellow-600 border-yellow-400">รอการอนุมัติ</Badge>;
+      case 'approved_by_foundation':
+      case 'shipping_in_progress':
+        return <Badge variant="outline" className="text-blue-600 border-blue-400">กำลังจัดส่ง</Badge>;
+      case 'received_by_foundation':
+        return <Badge variant="outline" className="text-green-600 border-green-400">จัดส่งสำเร็จ</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const filteredPledges = pledges.filter((p) => p.status === activeTab);
+  const filteredPledges = pledges.filter(pledge => {
+    if (activeTab === 'shipping_in_progress') {
+      return ['pending_foundation_approval', 'approved_by_foundation', 'shipping_in_progress'].includes(pledge.status);
+    }
+    return pledge.status === activeTab;
+  });
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -209,19 +181,9 @@ const FoundationPledges = () => {
                       </td>
                       <td className="py-3 px-4">
                         {getStatusBadge(pledge.status)}
-                      </td>
-                      <td className="py-3 px-4">
-                        {pledge.status === 'pending' && (
-                          <>
-                            <Button size="sm" variant="secondary" onClick={() => setApproveDialog({ open: true, pledge })}>
-                              <CheckCircle className="w-4 h-4 mr-1" /> อนุมัติ
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => setRejectDialog({ open: true, pledge })}>
-                              <XCircle className="w-4 h-4 mr-1" /> ปฏิเสธ
-                            </Button>
-                          </>
-                        )}
-                        {pledge.status === 'approved' && (
+                  </td>
+                  <td className="py-3 px-4">
+                        {['pending_foundation_approval', 'approved_by_foundation', 'shipping_in_progress'].includes(pledge.status) && (
                           <Button size="sm" variant="accent" onClick={() => setConfirmDialog({ open: true, pledge })}>
                             <Truck className="w-4 h-4 mr-1" /> ยืนยันรับของ
                           </Button>
@@ -234,36 +196,6 @@ const FoundationPledges = () => {
             </div>
           )}
 
-          {/* Approve Dialog */}
-          <Dialog open={approveDialog.open} onOpenChange={open => setApproveDialog({ open, pledge: open ? approveDialog.pledge : null })}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>ยืนยันอนุมัติการบริจาค</DialogTitle>
-              </DialogHeader>
-              <div>คุณต้องการอนุมัติการบริจาคนี้หรือไม่?</div>
-              <DialogFooter>
-                <Button onClick={handleApprove} disabled={saving}>
-                  {saving ? 'กำลังอนุมัติ...' : 'อนุมัติ'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Reject Dialog */}
-          <Dialog open={rejectDialog.open} onOpenChange={open => setRejectDialog({ open, pledge: open ? rejectDialog.pledge : null })}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>ปฏิเสธการบริจาค</DialogTitle>
-              </DialogHeader>
-              <div className="mb-2">กรุณาระบุเหตุผลในการปฏิเสธ</div>
-              <Textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} required placeholder="เหตุผลในการปฏิเสธ" />
-              <DialogFooter>
-                <Button onClick={handleReject} disabled={saving || !rejectReason} variant="destructive">
-                  {saving ? 'กำลังปฏิเสธ...' : 'ปฏิเสธ'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
 
           {/* Confirm Receipt Dialog */}
           <Dialog open={confirmDialog.open} onOpenChange={open => setConfirmDialog({ open, pledge: open ? confirmDialog.pledge : null })}>

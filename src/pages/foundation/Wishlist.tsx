@@ -19,7 +19,6 @@ const defaultForm = {
   description: '',
   quantity_needed: 1,
   priority_level: 'medium',
-  expiry_date: '',
   category_id: '',
   imageFiles: [] as File[], // To store actual File objects for new uploads
   imageUrls: [] as string[], // To store existing image URLs or new uploaded URLs
@@ -59,10 +58,9 @@ const FoundationWishlist = () => {
         description: item.description || item.description_detail,
         quantity_needed: item.quantity_needed,
         quantity_received: item.quantity_received,
-        priority_level: item.priority_level || item.urgency_level === 'urgent' ? 'urgent' : (item.urgency_level === 'high' ? 'high' : (item.urgency_level === 'medium' ? 'medium' : 'low')),
+        priority_level: item.urgency_level === 'urgent' ? 'urgent' : (item.urgency_level === 'very_urgent' ? 'high' : 'low'),
         status: item.status,
-        expiry_date: item.expiry_date ? item.expiry_date.slice(0, 10) : (item.posted_date ? item.posted_date.slice(0, 10) : ''),
-        images: item.images && item.images.length > 0 ? item.images : (item.example_image_url ? [item.example_image_url] : []),
+        images: item.example_image_url ? [item.example_image_url] : [],
         foundation_name: item.foundation?.foundation_name,
         foundation_id: item.foundation_id,
         category: item.category,
@@ -103,14 +101,13 @@ const FoundationWishlist = () => {
   const openEdit = (item: any) => {
     setEditing(item);
     setForm({
-      title: item.title || item.item_name || '',
-      description: item.description || item.description_detail || '',
+      title: item.item_name || '', // Use item_name from backend
+      description: item.description_detail || '', // Use description_detail from backend
       quantity_needed: item.quantity_needed || 1,
-      priority_level: item.priority_level || item.urgency_level || 'medium',
-      expiry_date: item.expiry_date ? item.expiry_date.slice(0, 10) : (item.posted_date ? item.posted_date.slice(0, 10) : ''),
+      priority_level: item.urgency_level === 'urgent' ? 'urgent' : (item.urgency_level === 'very_urgent' ? 'high' : 'low'), // Map backend urgency_level to frontend priority_level
       category_id: item.category_id ? String(item.category_id) : '',
-      imageFiles: [], // No files initially when editing
-      imageUrls: item.images && item.images.length > 0 ? item.images : (item.example_image_url ? [item.example_image_url] : []),
+      imageFiles: [],
+      imageUrls: item.example_image_url ? [item.example_image_url] : [], // Use example_image_url directly
       quantity_unit: item.quantity_unit || '',
     });
     setDialogOpen(true);
@@ -205,15 +202,23 @@ const FoundationWishlist = () => {
         if (res.data && res.data.wishlist_item) {
           const updated = res.data.wishlist_item;
           setItems(prev => prev.map(item =>
-            item.id === updated.id
+            item.id === updated.wishlist_item_id
               ? {
                   ...item,
-                  ...updated,
-                  title: updated.title || item.title,
-                  description: updated.description || item.description,
-                  priority_level: updated.priority_level || item.priority_level,
-                  expiry_date: updated.expiry_date ? updated.expiry_date.slice(0, 10) : '',
-                  images: Array.isArray(updated.images) && updated.images.length > 0 ? updated.images : [],
+                  id: updated.wishlist_item_id,
+                  title: updated.item_name,
+                  description: updated.description_detail,
+                  quantity_needed: updated.quantity_needed,
+                  quantity_received: updated.quantity_received,
+                  priority_level: updated.urgency_level, // Assuming backend sends urgency_level
+                  status: updated.status,
+                  images: updated.example_image_url ? [updated.example_image_url] : [],
+                  foundation_name: updated.foundation?.foundation_name,
+                  foundation_id: updated.foundation_id,
+                  category: updated.category,
+                  category_id: updated.category_id,
+                  quantity_unit: updated.quantity_unit,
+                  updated_at: updated.updated_at,
                 }
               : item
           ));
@@ -292,9 +297,6 @@ const FoundationWishlist = () => {
                     foundation_name: undefined,
                   }} showFoundation={false} />
                   <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button size="icon" variant="secondary" onClick={() => openEdit(item)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button size="icon" variant="destructive">
@@ -390,10 +392,6 @@ const FoundationWishlist = () => {
                       ไม่สามารถเปลี่ยนหมวดหมู่ได้หลังจากสร้างรายการแล้ว
                     </div>
                   )}
-                </div>
-                <div>
-                  <label className="block mb-1 font-medium">วันหมดอายุ (ถ้ามี)</label>
-                  <Input type="date" name="expiry_date" value={form.expiry_date} onChange={handleFormChange} />
                 </div>
                 <div>
                   <label className="block mb-1 font-medium">รูปภาพ</label>
