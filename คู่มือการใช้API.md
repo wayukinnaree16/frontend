@@ -3,7 +3,7 @@
 ## ภาพรวม
 API นี้ให้บริการสำหรับระบบบริจาค แบ่งกลุ่มตามประเภทผู้ใช้และฟังก์ชัน เช่น ผู้ใช้ทั่วไป, ผู้ดูแลมูลนิธิ, ผู้บริจาค, และแอดมิน
 
-- Base URL: http://localhost:3001
+- Base URL: https://backend-lcjt.onrender.com
 - รองรับ JSON เป็นหลัก
 - ต้องส่ง `Content-Type: application/json` ทุก request ที่มี body
 - Endpoint ที่ต้องยืนยันตัวตน ต้องส่ง JWT token ใน header: `Authorization: Bearer <token>`

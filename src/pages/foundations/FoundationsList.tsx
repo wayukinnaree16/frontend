@@ -14,7 +14,7 @@ const FoundationsList = () => {
     if (!u) return '';
     if (u.startsWith('http://') || u.startsWith('https://') || u.startsWith('blob:')) return u;
     const path = u.startsWith('/') ? u : `/${u}`;
-    return `http://localhost:3001${path}`;
+    return `https://backend-lcjt.onrender.com${path}`;
   };
   const [foundations, setFoundations] = useState<any[]>([]);
   const [foundationTypes, setFoundationTypes] = useState<FoundationType[]>([]);

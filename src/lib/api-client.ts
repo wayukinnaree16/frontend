@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = 'https://backend-lcjt.onrender.com';
 
 export interface ApiResponse<T = any> {
   statusCode?: number;
