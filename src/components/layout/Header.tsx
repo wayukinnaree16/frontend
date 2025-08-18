@@ -27,7 +27,7 @@ export const Header = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/foundation/dashboard" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-            <Heart className="h-8 w-8 text-primary fill-current" />
+            <img src="/favicon.ico" alt="Logo" className="h-8 w-8" />
             <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
               Giving Heart Thailand
             </span>
@@ -95,7 +95,7 @@ export const Header = () => {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-          <Heart className="h-8 w-8 text-primary fill-current" />
+          <img src="/favicon.ico" alt="Logo" className="h-8 w-8" />
           <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
             Giving Heart Thailand
           </span>
