@@ -110,34 +110,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-primary-light">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div className="animate-fade-in">
-              <div className="bg-white rounded-xl p-8 shadow-soft hover:shadow-medium transition-shadow">
-                <Heart className="h-12 w-12 mx-auto mb-4 text-primary" />
-                <div className="text-3xl font-bold text-primary mb-2">1,234+</div>
-                <div className="text-muted-foreground">การบริจาคที่สำเร็จ</div>
-              </div>
-            </div>
-            <div className="animate-fade-in">
-              <div className="bg-white rounded-xl p-8 shadow-soft hover:shadow-medium transition-shadow">
-                <Users className="h-12 w-12 mx-auto mb-4 text-secondary" />
-                <div className="text-3xl font-bold text-primary mb-2">89</div>
-                <div className="text-muted-foreground">มูลนิธิที่ไว้วางใจ</div>
-              </div>
-            </div>
-            <div className="animate-fade-in">
-              <div className="bg-white rounded-xl p-8 shadow-soft hover:shadow-medium transition-shadow">
-                <Package className="h-12 w-12 mx-auto mb-4 text-accent" />
-                <div className="text-3xl font-bold text-primary mb-2">567</div>
-                <div className="text-muted-foreground">รายการที่ต้องการช่วยเหลือ</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* Featured Foundations */}
       <section className="py-16">
@@ -236,13 +209,7 @@ const Index = () => {
               <h3 className="text-xl font-semibold mb-4">2. ทำการบริจาค</h3>
               <p className="text-muted-foreground">กรอกข้อมูลการบริจาคและเลือกวิธีการส่งมอบ</p>
             </div>
-            <div className="text-center">
-              <div className="bg-accent-light rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-                <Star className="h-10 w-10 text-accent" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">3. ติดตามและรีวิว</h3>
-              <p className="text-muted-foreground">ติดตามสถานะการบริจาคและแบ่งปันประสบการณ์</p>
-            </div>
+
           </div>
         </div>
       </section>
