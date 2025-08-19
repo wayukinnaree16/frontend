@@ -35,7 +35,7 @@ const AdminFoundations = () => {
         ]);
         
         const filteredPending = (pendingRes.data?.foundations || []).filter(
-          (f: PendingFoundation) => f.user?.account_status === 'pending_verification'
+          (f: PendingFoundation) => f.foundation_status === 'pending_verification'
         );
         setPendingFoundations(filteredPending);
         setAllFoundations(allRes.data?.foundations || []);
@@ -84,7 +84,7 @@ const AdminFoundations = () => {
             const id = foundation.foundation_id || (foundation as any).id;
             const email = (foundation as any).user?.email || foundation.contact_email || '-';
             const createdAt = foundation.created_at ? format(new Date(foundation.created_at), 'd MMM yyyy', { locale: th }) : '-';
-            let status = (foundation as any).user?.account_status || 'N/A';
+            let status = (foundation as any).foundation_status || 'N/A';
             if (!isPendingTab && status === 'N/A') {
               status = 'active';
             }

@@ -68,7 +68,7 @@ const FoundationVerification = () => {
               description: d.description,
               expiry_date: d.expiry_date,
               upload_date: d.upload_date,
-              verification_status_by_admin: foundationData.user_account_status === 'active' ? 'approved' : (d.verification_status_by_admin ?? d.status),
+              verification_status_by_admin: foundationData.foundation_status === 'active' ? 'approved' : (d.verification_status_by_admin ?? d.status),
               admin_remarks: d.admin_remarks ?? d.review_notes ?? null,
             }))
           : [];
@@ -99,13 +99,13 @@ const FoundationVerification = () => {
   const handleApprove = async () => {
     if (!id) return;
     
-    // Validate foundation state before approval based on user_account_status
-    if (foundation.user_account_status === 'active') {
+    // Validate foundation state before approval based on foundation_status
+    if (foundation.foundation_status === 'active') {
       alert('มูลนิธินี้ได้รับการอนุมัติแล้ว');
       return;
     }
     
-    if (foundation.user_account_status === 'inactive') {
+    if (foundation.foundation_status === 'rejected') {
       alert('มูลนิธินี้ถูกปฏิเสธแล้ว ไม่สามารถอนุมัติได้');
       return;
     }
@@ -139,13 +139,13 @@ const FoundationVerification = () => {
   const handleReject = async () => {
     if (!id || !rejectReason) return;
     
-    // Validate foundation state before rejection based on user_account_status
-    if (foundation.user_account_status === 'active') {
+    // Validate foundation state before rejection based on foundation_status
+    if (foundation.foundation_status === 'active') {
       alert('มูลนิธินี้ได้รับการอนุมัติแล้ว ไม่สามารถปฏิเสธได้');
       return;
     }
     
-    if (foundation.user_account_status === 'inactive') {
+    if (foundation.foundation_status === 'rejected') {
       alert('มูลนิธินี้ถูกปฏิเสธแล้ว');
       return;
     }
@@ -212,9 +212,9 @@ const FoundationVerification = () => {
               </div>
               <div><b>เว็บไซต์:</b> {foundation.website_url ? <a href={foundation.website_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">{foundation.website_url}</a> : '-'}</div>
               <div><b>สถานะ:</b> {
-                foundation.user_account_status === 'active' ? 'ยืนยันแล้ว' :
-                foundation.user_account_status === 'pending_verification' ? 'รอการยืนยัน' :
-                foundation.user_account_status === 'inactive' ? 'ถูกปฏิเสธ' :
+                foundation.foundation_status === 'active' ? 'ยืนยันแล้ว' :
+                foundation.foundation_status === 'pending_verification' ? 'รอการยืนยัน' :
+                foundation.foundation_status === 'rejected' ? 'ถูกปฏิเสธ' :
                 'ไม่ทราบสถานะ'
               }</div>
               <div><b>Foundation ID:</b> {foundation.foundation_id || foundation.id}</div>
@@ -254,8 +254,8 @@ const FoundationVerification = () => {
             )}
           </div>
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Check if foundation is pending verification based on user_account_status */}
-            {foundation.user_account_status === 'pending_verification' && (
+            {/* Check if foundation is pending verification based on foundation_status */}
+            {foundation.foundation_status === 'pending_verification' && (
               <>
                 <button
                   onClick={handleApprove}
@@ -283,12 +283,12 @@ const FoundationVerification = () => {
               </>
             )}
             {/* Show status message if already processed */}
-            {foundation.user_account_status === 'active' && (
+            {foundation.foundation_status === 'active' && (
               <div className="text-green-600 font-semibold">
                 ✓ มูลนิธินี้ได้รับการอนุมัติแล้ว
               </div>
             )}
-            {foundation.user_account_status === 'inactive' && (
+            {foundation.foundation_status === 'rejected' && (
               <div className="text-red-600 font-semibold">
                 ✗ มูลนิธินี้ถูกปฏิเสธแล้ว
                 {foundation.rejection_reason && (

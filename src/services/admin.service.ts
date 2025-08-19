@@ -15,6 +15,7 @@ export interface PendingFoundation extends Foundation {
   admin_user: User;
   user?: User;
   user_account_status?: string; // Add this line
+  foundation_status?: 'pending_verification' | 'active' | 'rejected'; // Add foundation_status
 }
 
 export interface ApproveFoundationRequest {

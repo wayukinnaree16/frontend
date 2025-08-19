@@ -73,7 +73,7 @@ const FoundationReview: React.FC = () => {
           admin_notes: reason 
         });
       }
-      setFoundation(prev => prev ? { ...prev, user_account_status: action === 'approve' ? 'active' : 'rejected' } : null);
+      setFoundation(prev => prev ? { ...prev, foundation_status: action === 'approve' ? 'active' : 'rejected' } : null);
       toast({ 
         title: 'อัปเดตสถานะมูลนิธิสำเร็จ', 
         description: `มูลนิธิถูก ${action === 'approve' ? 'อนุมัติ' : 'ปฏิเสธ'}` 
