@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { FoundationCard } from '@/components/cards/FoundationCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, SlidersHorizontal } from 'lucide-react';
+import { Search, Filter } from 'lucide-react';
 import { publicService, FoundationType } from '@/services/public.service';
 
 const FoundationsList = () => {
+  const [searchParams] = useSearchParams();
+  
   // Normalize image URL to absolute (handles relative paths like '/uploads/logo.jpg' or 'logo.jpg')
   const toAbsoluteUrl = (u: string | undefined | null) => {
     if (!u) return '';
@@ -19,7 +22,7 @@ const FoundationsList = () => {
   const [foundations, setFoundations] = useState<any[]>([]);
   const [foundationTypes, setFoundationTypes] = useState<FoundationType[]>([]);
   const [provinces, setProvinces] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedProvince, setSelectedProvince] = useState('all');
   const [sortBy, setSortBy] = useState<'foundation_name' | 'foundation_name_desc' | 'created_at' | 'created_at_desc'>('foundation_name');
@@ -31,10 +34,14 @@ const FoundationsList = () => {
   useEffect(() => {
     const fetchTypes = async () => {
       try {
-        // Backend returns envelope { success, data: FoundationType[] }
+        // Backend returns envelope { statusCode, data: FoundationType[], message, success }
         const res = await publicService.getFoundationTypesResponse();
-        const payload = res?.data as any;
-        const list = Array.isArray(payload?.data) ? payload.data : [];
+        
+        // The API response structure is: { statusCode, data: [...], message, success }
+        // The actual data array is directly in res.data (not res.data.data)
+        const responseData = res?.data as any;
+        const list = Array.isArray(responseData) ? responseData : [];
+        
         setFoundationTypes(
           list.map((item: any) => ({
             type_id: Number(item.type_id),
@@ -43,6 +50,7 @@ const FoundationsList = () => {
           }))
         );
       } catch (e) {
+        console.error('Error fetching foundation types:', e);
         setFoundationTypes([]);
       }
     };
@@ -58,20 +66,7 @@ const FoundationsList = () => {
           page,
           limit: 9,
         };
-        // กำหนด sort_by เฉพาะถ้าไม่ใช่ค่า default
-        if (sortBy === 'foundation_name') {
-          params.sort_by = 'foundation_name';
-          params.order = 'asc';
-        } else if (sortBy === 'created_at') {
-          params.sort_by = 'created_at';
-          params.order = 'asc';
-        } else if (sortBy === 'foundation_name_desc') {
-          params.sort_by = 'foundation_name';
-          params.order = 'desc';
-        } else if (sortBy === 'created_at_desc') {
-          params.sort_by = 'created_at';
-          params.order = 'desc';
-        }
+        // ไม่ส่ง sort parameters ไปยัง backend เพราะจะเรียงลำดับทั้งหมดใน frontend
         if (searchTerm) params.name = searchTerm;
         if (selectedType !== 'all') params.type_id = selectedType;
         if (selectedProvince !== 'all') params.province = selectedProvince;
@@ -86,7 +81,7 @@ const FoundationsList = () => {
         const list: any[] = Array.isArray(payload?.foundations) ? payload.foundations : [];
 
         // Map Foundation ชัดเจนตามฟิลด์ backend
-        const mapped = list.map((f: any) => ({
+        let mapped = list.map((f: any) => ({
           id: String(f.foundation_id),
           name: f.foundation_name ?? '',
           description: f.history_mission ?? '',
@@ -96,8 +91,23 @@ const FoundationsList = () => {
             ? f.foundation_type.name
             : (f.foundation_type_id ? `ประเภท #${f.foundation_type_id}` : 'ไม่ระบุ'),
           is_verified: !!f.verified_at,
-          wishlist_count: f.wishlist_count ?? undefined
+          wishlist_count: f.wishlist_count ?? undefined,
+          created_at: f.created_at // เพิ่มฟิลด์วันที่สำหรับการเรียงลำดับ
         }));
+
+        // เรียงลำดับใน frontend เพื่อให้การเรียงลำดับถูกต้อง
+        if (sortBy === 'foundation_name') {
+          mapped = mapped.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+        } else if (sortBy === 'foundation_name_desc') {
+          mapped = mapped.sort((a, b) => b.name.localeCompare(a.name, 'th'));
+        } else if (sortBy === 'created_at') {
+          // ล่าสุดก่อน (desc) - วันที่ใหม่กว่าก่อน
+          mapped = mapped.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        } else if (sortBy === 'created_at_desc') {
+          // เก่าสุดก่อน (asc) - วันที่เก่ากว่าก่อน
+          mapped = mapped.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        }
+
         setFoundations(mapped);
 
         const totalPagesFromApi =
@@ -138,16 +148,7 @@ const FoundationsList = () => {
     return <div className="text-center py-8 text-red-500">{error}</div>;
   }
 
-  if (!foundations.length) {
-    return (
-      <div className="text-center py-8">
-        <h2 className="text-2xl font-bold mb-4">ไม่พบมูลนิธิที่คุณต้องการ</h2>
-        <p className="text-muted-foreground text-lg">
-          ลองค้นหาด้วยคำคล้ายหรือเปลี่ยนตัวกรองดู
-        </p>
-      </div>
-    );
-  }
+
 
   return (
     <Layout>
@@ -184,6 +185,7 @@ const FoundationsList = () => {
                   <SelectValue placeholder="เลือกประเภท" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">ทั้งหมด</SelectItem>
                   {foundationTypes.map((type) => (
                     <SelectItem key={type.type_id} value={String(type.type_id)}>
                       {type.name}
@@ -202,7 +204,7 @@ const FoundationsList = () => {
                 <SelectContent>
                   {provinces.map((province) => (
                     <SelectItem key={province} value={province}>
-                      {province}
+                      {province === 'all' ? 'ทั้งหมด' : province}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -216,8 +218,8 @@ const FoundationsList = () => {
                   <SelectValue placeholder="เรียงตาม" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="foundation_name">ชื่อ A-Z</SelectItem>
-                  <SelectItem value="foundation_name_desc">ชื่อ Z-A</SelectItem>
+                  <SelectItem value="foundation_name">ชื่อ ก-ฮ</SelectItem>
+                  <SelectItem value="foundation_name_desc">ชื่อ ฮ-ก</SelectItem>
                   <SelectItem value="created_at">วันที่สร้างล่าสุด</SelectItem>
                   <SelectItem value="created_at_desc">วันที่สร้างเก่าสุด</SelectItem>
                 </SelectContent>
@@ -229,22 +231,27 @@ const FoundationsList = () => {
             <p className="text-sm text-muted-foreground">
               พบ {foundations.length} มูลนิธิ
             </p>
-            <Button variant="outline" size="sm">
-              <SlidersHorizontal className="h-4 w-4 mr-2" />
-              ตัวกรองเพิ่มเติม
-            </Button>
           </div>
         </div>
 
         {/* Results */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {foundations.map((foundation) => (
-            <FoundationCard 
-              key={foundation.id} 
-              foundation={foundation}
-              onFavorite={(id) => console.log('Favorited:', id)}
-            />
-          ))}
+          {foundations.length > 0 ? (
+            foundations.map((foundation) => (
+              <FoundationCard 
+                key={foundation.id} 
+                foundation={foundation}
+                onFavorite={(id) => console.log('Favorited:', id)}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <h2 className="text-2xl font-bold mb-4">ไม่พบมูลนิธิที่คุณต้องการ</h2>
+              <p className="text-muted-foreground text-lg">
+                ลองค้นหาด้วยคำคล้ายหรือเปลี่ยนตัวกรองดู
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Pagination */}

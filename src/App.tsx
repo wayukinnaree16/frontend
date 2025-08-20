@@ -15,6 +15,7 @@ import WishlistDetail from "./pages/wishlist/WishlistDetail";
 import About from "./pages/About";
 import FAQ from "./pages/FAQ";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import WriteReview from "./pages/donor/WriteReview";
 import PledgeForm from "./pages/donor/PledgeForm";
@@ -66,6 +67,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/wishlist" element={<WishlistList />} />
 

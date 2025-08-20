@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
-const BASE_URL = 'https://backend-lcjt.onrender.com';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://backend-lcjt.onrender.com';
 
 
 export interface ApiResponse<T = any> {

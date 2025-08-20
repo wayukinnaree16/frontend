@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { FoundationCard } from '@/components/cards/FoundationCard';
 import { WishlistItemCard } from '@/components/cards/WishlistItemCard';
@@ -16,6 +16,8 @@ const Index = () => {
   const [latestWishlistItems, setLatestWishlistItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,6 +67,20 @@ const Index = () => {
     fetchData();
   }, []);
 
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/foundations?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate('/foundations');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -87,9 +103,12 @@ const Index = () => {
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                 <Input 
                   placeholder="ค้นหามูลนิธิที่คุณสนใจ..." 
-                  className="pl-12 h-14 text-lg bg-white border-0 shadow-large"
+                  className="pl-12 h-14 text-lg bg-white border-0 shadow-large text-gray-900"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleKeyPress}
                 />
-                <Button size="lg" className="absolute right-2 top-2 h-10">
+                <Button size="lg" className="absolute right-2 top-2 h-10" onClick={handleSearch}>
                   ค้นหา
                 </Button>
               </div>
@@ -102,9 +121,7 @@ const Index = () => {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="xl" variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white hover:text-primary">
-                เรียนรู้เพิ่มเติม
-              </Button>
+
             </div>
           </div>
         </div>
