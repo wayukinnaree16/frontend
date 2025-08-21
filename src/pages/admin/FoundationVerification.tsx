@@ -154,7 +154,7 @@ const FoundationVerification = () => {
     try {
       console.log('Attempting to reject foundation with ID:', id);
       console.log('Rejection reason:', rejectReason);
-      await adminService.rejectFoundation(id, { rejection_reason: rejectReason });
+      await adminService.rejectFoundation(id, { verification_notes: rejectReason });
       toast({ title: 'ปฏิเสธมูลนิธิสำเร็จ', description: 'สถานะมูลนิธิได้รับการอัปเดตแล้ว' });
       navigate('/admin/foundations');
     } catch (e: any) {

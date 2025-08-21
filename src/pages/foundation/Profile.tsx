@@ -40,6 +40,7 @@ interface FoundationType {
 const FoundationProfile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [types, setTypes] = useState<FoundationType[]>([]);
@@ -328,6 +329,25 @@ const FoundationProfile = () => {
     }
   };
 
+  const handleResubmit = async () => {
+    setResubmitting(true);
+    try {
+      const res = await foundationService.resubmitProfile();
+      toast({ title: 'ส่งโปรไฟล์ใหม่สำเร็จ สถานะเปลี่ยนเป็นรอการตรวจสอบ' });
+      
+      // Refresh profile data
+      const refreshed = await foundationService.getMyProfile();
+      const foundationObj = refreshed?.data || null;
+      setProfile(foundationObj);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'เกิดข้อผิดพลาดในการส่งใหม่';
+      toast({ title: errorMessage, variant: 'destructive' });
+      console.error('Resubmit error:', error);
+    } finally {
+      setResubmitting(false);
+    }
+  };
+
   if (loading) return <div className="text-center py-8">Loading...</div>;
   
   return (
@@ -341,6 +361,42 @@ const FoundationProfile = () => {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
               <p className="text-red-800">{error}</p>
+            </div>
+          )}
+          
+          {profile?.foundation_status === 'rejected' && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-red-800 font-semibold mb-2">โปรไฟล์ถูกปฏิเสธ</h3>
+                  <p className="text-red-700 mb-2">โปรไฟล์ของคุณถูกปฏิเสธโดยผู้ดูแลระบบ</p>
+                  {profile?.verification_notes && (
+                    <p className="text-red-600 text-sm">เหตุผล: {profile.verification_notes}</p>
+                  )}
+                </div>
+                <Button 
+                  onClick={handleResubmit} 
+                  disabled={resubmitting}
+                  variant="outline"
+                  className="border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  {resubmitting ? 'กำลังส่งใหม่...' : 'ส่งใหม่'}
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {profile?.foundation_status === 'pending_verification' && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+              <h3 className="text-yellow-800 font-semibold mb-2">รอการตรวจสอบ</h3>
+              <p className="text-yellow-700">โปรไฟล์ของคุณอยู่ระหว่างการตรวจสอบโดยผู้ดูแลระบบ</p>
+            </div>
+          )}
+          
+          {profile?.foundation_status === 'verified' && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+              <h3 className="text-green-800 font-semibold mb-2">ได้รับการอนุมัติแล้ว</h3>
+              <p className="text-green-700">โปรไฟล์ของคุณได้รับการอนุมัติจากผู้ดูแลระบบแล้ว</p>
             </div>
           )}
           

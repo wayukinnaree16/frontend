@@ -29,7 +29,7 @@ const ProgressBar = ({ received, needed }: { received: number, needed: number })
 };
 
 const WishlistDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const isFoundation = user?.user_type === 'foundation_admin';
@@ -40,16 +40,50 @@ const WishlistDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState<boolean>(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]); // New state for new image files
+  const [categories, setCategories] = useState<any[]>([]);
+
+  // Helper function to map backend urgency_level to frontend priority_level
+  const mapUrgencyToPriority = (urgency: string) => {
+    const urgencyMap: { [key: string]: string } = {
+      'normal': 'ปกติ',
+      'urgent': 'สำคัญ',
+      'very_urgent': 'สำคัญมาก',
+      'extremely_urgent': 'เร่งด่วน'
+    };
+    return urgencyMap[urgency] || 'ปกติ';
+  };
 
   useEffect(() => {
     if (item) {
       setEditItem({
         ...item,
+        // Convert Thai priority_level back to English for editing
+        priority_level: (() => {
+          if (item.priority_level === 'ปกติ') return 'normal';
+          if (item.priority_level === 'สำคัญ') return 'urgent';
+          if (item.priority_level === 'สำคัญมาก') return 'very_urgent';
+          if (item.priority_level === 'เร่งด่วน') return 'extremely_urgent';
+          return 'normal';
+        })(),
         imageUrls: item.images || [], // Initialize imageUrls with existing images
       });
       setImageFiles([]); // Clear new image files on item change
     }
   }, [item]);
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await publicService.getItemCategories();
+        const cats = Array.isArray(res.data) ? res.data : [];
+        setCategories(cats);
+      } catch (e) {
+        console.error('Error fetching categories:', e);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -76,11 +110,12 @@ const WishlistDetail = () => {
           description: ww.description_detail,
           quantity_needed: ww.quantity_needed,
           quantity_received: ww.quantity_received,
-          priority_level: ww.urgency_level,
+          priority_level: mapUrgencyToPriority(ww.urgency_level), // Use mapping function
           images: ww.example_image_url ? [ww.example_image_url] : [],
           foundation_name: ww.foundation?.foundation_name || ww.foundation?.city || '',
           foundation_id: ww.foundation_id ? String(ww.foundation_id) : undefined,
-          category: ww.category_id || '',
+          category: ww.category?.name || '',
+          category_id: ww.category_id || '',
           quantity_unit: ww.quantity_unit || '', // Add quantity_unit here
         });
         setNotFound(false);
@@ -123,14 +158,6 @@ const WishlistDetail = () => {
   }
   if (error || !item) return <div className="text-center py-8 text-red-500">{error || 'ไม่พบข้อมูล'}</div>;
 
-  // Helper function to map backend urgency_level to frontend priority_level
-  const mapUrgencyToPriority = (urgency: string) => {
-    if (urgency === 'normal') return 'ปกติ';
-    if (urgency === 'urgent') return 'สำคัญ';
-    if (urgency === 'very_urgent') return 'สำคัญมาก';
-    return 'ปกติ'; // Default
-  };
-
   const handleSave = async () => {
     try {
       setLoading(true);
@@ -147,29 +174,149 @@ const WishlistDetail = () => {
       // Combine existing image URLs with newly uploaded ones
       const finalImages = [...(editItem.imageUrls || []), ...uploadedImageUrls].filter(url => url.trim() !== '');
 
-      // Map frontend priority_level to backend urgency_level
-      const mapPriorityToUrgency = (priority: string) => {
-        if (priority === 'ปกติ') return 'normal';
-        if (priority === 'สำคัญ') return 'urgent';
-        if (priority === 'สำคัญมาก') return 'very_urgent';
-        if (priority === 'เร่งด่วน') return 'very_urgent'; // Assuming "เร่งด่วน" also maps to very_urgent
-        return 'normal';
-      };
-
-      const updatedData = {
-        item_name: editItem.title,
-        description_detail: editItem.description,
-        quantity_needed: Number(editItem.quantity_needed),
-        urgency_level: mapPriorityToUrgency(editItem.priority_level),
-        quantity_unit: editItem.quantity_unit,
-        example_image_url: finalImages.length > 0 ? finalImages[0] : undefined, // Send only the first image
-      };
-      await foundationService.updateWishlistItem(item.id, updatedData);
+      // Prepare update data with proper validation
+      const updatedData: any = {};
+      
+      // Always include essential fields to ensure backend validation passes
+      // Use editItem values if available, otherwise fallback to item values
+      const titleValue = editItem?.title || item?.title;
+      if (titleValue && titleValue.trim()) {
+        updatedData.item_name = titleValue.trim();
+      }
+      
+      const descriptionValue = editItem?.description || item?.description;
+      if (descriptionValue && descriptionValue.trim()) {
+        updatedData.description_detail = descriptionValue.trim();
+      }
+      
+      const quantityValue = editItem?.quantity_needed || item?.quantity_needed;
+      if (quantityValue && Number(quantityValue) > 0) {
+        updatedData.quantity_needed = Number(quantityValue);
+      }
+      
+      // Handle urgency_level - this is the most important field for the current issue
+      const priorityValue = editItem?.priority_level || item?.priority_level;
+      
+      // Map Thai priority values to English backend values
+      if (priorityValue === 'ปกติ') {
+        updatedData.urgency_level = 'normal';
+      } else if (priorityValue === 'สำคัญ') {
+        updatedData.urgency_level = 'urgent';
+      } else if (priorityValue === 'สำคัญมาก') {
+        updatedData.urgency_level = 'very_urgent';
+      } else if (priorityValue === 'เร่งด่วน') {
+        updatedData.urgency_level = 'extremely_urgent';
+      } else if (['normal', 'urgent', 'very_urgent', 'extremely_urgent'].includes(priorityValue)) {
+        // If already in English format, use as is
+        updatedData.urgency_level = priorityValue;
+      } else {
+        updatedData.urgency_level = 'normal';
+      }
+      
+      const unitValue = editItem?.quantity_unit || item?.quantity_unit;
+      if (unitValue && unitValue.trim()) {
+        updatedData.quantity_unit = unitValue.trim();
+      }
+      
+      const categoryId = Number(editItem?.category_id || item?.category_id);
+      if (categoryId && categoryId > 0) {
+        updatedData.category_id = categoryId;
+      }
+      
+      if (finalImages.length > 0) {
+        updatedData.example_image_url = finalImages[0];
+      } else if (item?.images && item.images.length > 0) {
+        updatedData.example_image_url = item.images[0];
+      }
+      
+      // Ensure we have at least one field to update
+      if (Object.keys(updatedData).length === 0) {
+        toast({
+          title: "ข้อผิดพลาด",
+          description: "ไม่สามารถอัปเดตข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Client-side validation
+      const validationErrors: string[] = [];
+      
+      if (!updatedData.item_name || !updatedData.item_name.trim()) {
+        validationErrors.push('กรุณากรอกชื่อรายการ');
+      } else if (updatedData.item_name.length > 255) {
+        validationErrors.push('ชื่อรายการต้องไม่เกิน 255 ตัวอักษร');
+      }
+      
+      if (!updatedData.quantity_needed || updatedData.quantity_needed <= 0 || !Number.isInteger(updatedData.quantity_needed)) {
+        validationErrors.push('จำนวนที่ต้องการต้องเป็นจำนวนเต็มบวก');
+      }
+      
+      if (!updatedData.quantity_unit || !updatedData.quantity_unit.trim()) {
+        validationErrors.push('กรุณากรอกหน่วยนับ');
+      } else if (updatedData.quantity_unit.length > 50) {
+        validationErrors.push('หน่วยนับต้องไม่เกิน 50 ตัวอักษร');
+      }
+      
+      if (!updatedData.category_id || updatedData.category_id <= 0 || !Number.isInteger(updatedData.category_id)) {
+        validationErrors.push('กรุณาเลือกหมวดหมู่ที่ถูกต้อง');
+      }
+      
+      if (!updatedData.urgency_level || !['normal', 'urgent', 'very_urgent', 'extremely_urgent'].includes(updatedData.urgency_level)) {
+        validationErrors.push('กรุณาเลือกระดับความเร่งด่วน');
+      }
+      
+      if (validationErrors.length > 0) {
+        console.log('Validation errors:', validationErrors);
+        toast({
+          title: "กรุณาตรวจสอบข้อมูล",
+          description: validationErrors.join('\n'),
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      
+      console.log('All validation passed, proceeding with update...');
+      console.log('=== DEBUG UPDATE WISHLIST ITEM ===');
+      console.log('editItem:', editItem);
+      console.log('item:', item);
+      console.log('editItem?.priority_level:', editItem?.priority_level);
+      console.log('item?.priority_level:', item?.priority_level);
+      console.log('priorityValue used:', editItem?.priority_level);
+      console.log('Sending update data:', updatedData);
+      console.log('Update data keys:', Object.keys(updatedData));
+      console.log('Update data values:', Object.values(updatedData));
+      console.log('Is updatedData empty?', Object.keys(updatedData).length === 0);
+      console.log('Item ID:', item.id);
+      console.log('API endpoint:', `/api/foundation/wishlist-items/${item.id}`);
+      console.log('Required fields check:');
+      console.log('- item_name:', updatedData.item_name);
+      console.log('- quantity_needed:', updatedData.quantity_needed);
+      console.log('- quantity_unit:', updatedData.quantity_unit);
+      console.log('- category_id:', updatedData.category_id);
+      console.log('- urgency_level:', updatedData.urgency_level);
+      console.log('- description_detail:', updatedData.description_detail);
+      console.log('- example_image_url:', updatedData.example_image_url);
+      
+      console.log('=== SENDING REQUEST TO BACKEND ===');
+      console.log('Request URL:', `/api/foundation/wishlist-items/${item.id}`);
+      console.log('Request method: PUT');
+      console.log('Request payload:', JSON.stringify(updatedData, null, 2));
+      console.log('Request payload type:', typeof updatedData);
+      console.log('Request payload keys:', Object.keys(updatedData));
+      console.log('Request payload values:', Object.values(updatedData));
+      
+      const updateResult = await foundationService.updateWishlistItem(item.id, updatedData);
+      console.log('Update result:', updateResult);
       toast({
         title: "บันทึกสำเร็จ",
         description: "ข้อมูลรายการที่ต้องการได้รับการอัปเดตแล้ว",
       });
       setIsEditing(false);
+      // Navigate to foundation wishlist page
+      navigate('/foundation/wishlist');
       // Re-fetch item to get the latest data after saving
       const res = await publicService.getWishlistItemById(id!);
       const ww = res.data as any;
@@ -183,14 +330,51 @@ const WishlistDetail = () => {
           images: ww.example_image_url ? [ww.example_image_url] : [],
           foundation_name: ww.foundation?.foundation_name || ww.foundation?.city || '',
           foundation_id: ww.foundation_id ? String(ww.foundation_id) : undefined,
-          category: ww.category_id || '',
+          category: ww.category?.name || '',
+          category_id: ww.category_id || '',
           quantity_unit: ww.quantity_unit || '',
         });
     } catch (e: any) {
-      console.error('Error saving wishlist item', e);
+      console.error('=== ERROR SAVING WISHLIST ITEM ===');
+      console.error('Full error object:', e);
+      console.error('Error response:', e?.response);
+      console.error('Error response data:', e?.response?.data);
+      console.error('Error message:', e?.message);
+      
+      let errorMessage = 'ไม่สามารถบันทึกข้อมูลได้';
+      
+      // Handle specific validation errors
+      if (e?.response?.status === 400) {
+        if (e?.response?.data?.missing_fields && e?.response?.data?.missing_fields.length > 0) {
+          const missingFields = e.response.data.missing_fields;
+          const fieldNames = missingFields.map((field: string) => {
+            switch (field) {
+              case 'item_name': return 'ชื่อรายการ';
+              case 'description_detail': return 'รายละเอียด';
+              case 'quantity_needed': return 'จำนวนที่ต้องการ';
+              case 'quantity_unit': return 'หน่วยนับ';
+              case 'category_id': return 'หมวดหมู่';
+              case 'urgency_level': return 'ระดับความเร่งด่วน';
+              default: return field;
+            }
+          }).join(', ');
+          errorMessage = `กรุณากรอกข้อมูลให้ครบถ้วน: ${fieldNames}`;
+        } else if (e?.response?.data?.message) {
+          errorMessage = e.response.data.message;
+        } else if (e?.response?.data?.error) {
+          errorMessage = e.response.data.error;
+        }
+      } else if (e?.response?.data?.message) {
+        errorMessage += ': ' + e.response.data.message;
+      } else if (e?.response?.data?.error) {
+        errorMessage += ': ' + e.response.data.error;
+      } else if (e?.message) {
+        errorMessage += ': ' + e.message;
+      }
+      
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถบันทึกข้อมูลได้: " + (e?.response?.data?.message || e.message),
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -222,18 +406,54 @@ const WishlistDetail = () => {
               <div className="grid gap-2">
                 <Label htmlFor="category">หมวดหมู่</Label>
                 <Select
-                  value={isEditing ? (editItem?.priority_level || '') : item.priority_level}
+                  value={isEditing ? (editItem?.category_id || '') : item.category_id}
+                  onValueChange={(value) => setEditItem({ ...editItem, category_id: value })}
+                  disabled={!isEditing}
+                >
+                  <SelectTrigger>
+                    <SelectValue>
+                      {isEditing 
+                        ? categories.find(cat => String(cat.category_id) === editItem?.category_id)?.name || 'เลือกหมวดหมู่'
+                        : item.category || 'ไม่ระบุหมวดหมู่'
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((cat: any) => (
+                      <SelectItem key={cat.category_id} value={String(cat.category_id)}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="priority">ระดับความสำคัญ</Label>
+                <Select
+                  value={isEditing ? (editItem?.priority_level || 'normal') : (() => {
+                    if (item.priority_level === 'ปกติ') return 'normal';
+                    if (item.priority_level === 'สำคัญ') return 'urgent';
+                    if (item.priority_level === 'สำคัญมาก') return 'very_urgent';
+                    if (item.priority_level === 'เร่งด่วน') return 'extremely_urgent';
+                    return 'normal';
+                  })()} 
                   onValueChange={(value) => setEditItem({ ...editItem, priority_level: value })}
                   disabled={!isEditing}
                 >
                   <SelectTrigger>
-                    <SelectValue>{isEditing ? (editItem?.priority_level ? mapUrgencyToPriority(editItem.priority_level) : "เลือกระดับความสำคัญ") : mapUrgencyToPriority(item.priority_level)}</SelectValue>
+                    <SelectValue>
+                      {isEditing 
+                        ? mapUrgencyToPriority(editItem?.priority_level || 'normal') 
+                        : item.priority_level
+                      }
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="normal">ปกติ</SelectItem>
                     <SelectItem value="urgent">สำคัญ</SelectItem>
                     <SelectItem value="very_urgent">สำคัญมาก</SelectItem>
-                    <SelectItem value="very_urgent">เร่งด่วน</SelectItem>
+                    <SelectItem value="extremely_urgent">เร่งด่วน</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

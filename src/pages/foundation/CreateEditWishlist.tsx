@@ -51,7 +51,14 @@ const CreateEditWishlist = () => {
             description_detail: itemData.description_detail || '',
             quantity_required: itemData.quantity_needed || 1,
             quantity_unit: itemData.quantity_unit || '',
-            importance_level: itemData.urgency_level || 'medium',
+            importance_level: (() => {
+              const urgency = itemData.urgency_level;
+              if (urgency === 'normal') return 'low';
+              if (urgency === 'urgent') return 'medium';
+              if (urgency === 'very_urgent') return 'high';
+              if (urgency === 'extremely_urgent') return 'urgent';
+              return 'medium'; // default
+            })(),
             category_id: String(itemData.category_id) || '',
             image_url: itemData.example_image_url || '',
             custom_unit: itemData.quantity_unit === 'other' ? itemData.quantity_unit : ''
@@ -104,12 +111,21 @@ const CreateEditWishlist = () => {
         return;
       }
 
+      // Map frontend importance_level to backend urgency_level
+      const mapImportanceToUrgency = (importance: string): 'normal' | 'urgent' | 'very_urgent' | 'extremely_urgent' => {
+        if (importance === 'low') return 'normal';
+        if (importance === 'medium') return 'urgent'; // สำคัญ -> urgent
+        if (importance === 'high') return 'very_urgent'; // สำคัญมาก -> very_urgent
+        if (importance === 'urgent') return 'extremely_urgent'; // เร่งด่วน -> extremely_urgent
+        return 'urgent'; // default
+      };
+
       const submitData = {
         item_name: form.item_name.trim(),
         description_detail: form.description_detail.trim(),
         quantity_needed: form.quantity_required,
         quantity_unit: form.quantity_unit === 'other' ? form.custom_unit.trim() : form.quantity_unit,
-        urgency_level: form.importance_level as 'normal' | 'urgent' | 'very_urgent',
+        urgency_level: mapImportanceToUrgency(form.importance_level),
         category_id: form.category_id ? parseInt(form.category_id) : undefined,
         example_image_url: form.image_url.trim() ? form.image_url.trim() : undefined,
       };
@@ -120,7 +136,7 @@ const CreateEditWishlist = () => {
           description_detail: form.description_detail.trim(),
           quantity_needed: form.quantity_required,
           quantity_unit: form.quantity_unit === 'other' ? form.custom_unit.trim() : form.quantity_unit,
-          urgency_level: form.importance_level as 'normal' | 'urgent' | 'very_urgent',
+          urgency_level: mapImportanceToUrgency(form.importance_level),
           category_id: form.category_id ? parseInt(form.category_id) : undefined,
           example_image_url: form.image_url.trim() ? form.image_url.trim() : undefined,
         };

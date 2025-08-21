@@ -99,6 +99,10 @@ class FoundationService {
     return await apiClient.put('/api/foundation/profile/me', data);
   }
 
+  async resubmitProfile(): Promise<ApiResponse<Foundation>> {
+    return await apiClient.post('/api/foundation/profile/resubmit');
+  }
+
   // Wishlist Items
   async createWishlistItem(data: CreateWishlistItemRequest): Promise<ApiResponse<{ wishlist_item: WishlistItem }>> {
     return await apiClient.post('/api/foundation/wishlist-items', data);

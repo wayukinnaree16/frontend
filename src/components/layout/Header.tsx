@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Heart, User, Menu } from 'lucide-react';
+import { Heart, User, Menu, Bell } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 
 export const Header = () => {
   const { user, logout } = useAuth();
@@ -35,6 +36,7 @@ export const Header = () => {
 
           {/* User Actions */}
           <div className="flex items-center space-x-3">
+            <NotificationDropdown />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center space-x-2">
@@ -53,6 +55,12 @@ export const Header = () => {
                   <Link to="/foundation/dashboard" className="flex items-center">
                     <Heart className="mr-2 h-4 w-4" />
                     Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/notifications" className="flex items-center">
+                    <Bell className="mr-2 h-4 w-4" />
+                    การแจ้งเตือน
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -119,6 +127,7 @@ export const Header = () => {
 
         {/* User Actions */}
         <div className="flex items-center space-x-3">
+          {user && <NotificationDropdown />}
           {user ? (
             <>
               <DropdownMenu>
@@ -145,6 +154,12 @@ export const Header = () => {
                     <Link to="/favorites" className="flex items-center">
                       <Heart className="mr-2 h-4 w-4 fill-current" />
                       มูลนิธิที่ชื่นชอบ
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/notifications" className="flex items-center">
+                      <Bell className="mr-2 h-4 w-4" />
+                      การแจ้งเตือน
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

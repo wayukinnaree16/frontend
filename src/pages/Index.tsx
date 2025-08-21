@@ -5,11 +5,11 @@ import { FoundationCard } from '@/components/cards/FoundationCard';
 import { WishlistItemCard } from '@/components/cards/WishlistItemCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Heart, Users, Package, ArrowRight, Star } from 'lucide-react';
-import { publicService, Foundation, WishlistItem } from '@/services/public.service';
+import { ArrowRight, Heart, Users, Gift, Search } from 'lucide-react';
+import { publicService } from '@/services/public.service';
 import { donorService } from '@/services/donor.service';
-import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const [featuredFoundations, setFeaturedFoundations] = useState<any[]>([]);
@@ -17,6 +17,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +41,17 @@ const Index = () => {
           wishlist_count: undefined // ถ้ามี field นี้ใน API ให้ใส่ f.wishlist_count
         }));
         setFeaturedFoundations(mappedFoundations);
+
+        // Fetch user's favorites
+        try {
+          const favoritesRes = await donorService.getFavorites();
+          const favoritesList = favoritesRes.data || [];
+          const favoriteIds = new Set(favoritesList.map((fav: any) => String(fav.foundation?.foundation_id)));
+          setFavorites(favoriteIds);
+        } catch (favError) {
+          // User might not be logged in, continue without favorites
+          console.log('Could not fetch favorites:', favError);
+        }
         // Map WishlistItem
         console.log('Wishlist response:', wishlistRes.data);
         const wishlistData = wishlistRes.data?.wishlistItems || [];
@@ -66,6 +78,32 @@ const Index = () => {
     };
     fetchData();
   }, []);
+
+  const handleFavorite = async (foundationId: string) => {
+    try {
+      const isFavorited = favorites.has(foundationId);
+      
+      if (!isFavorited) {
+        await donorService.addFavorite({ foundation_id: Number(foundationId) });
+        setFavorites(prev => new Set([...prev, foundationId]));
+        toast({ title: 'เพิ่มเป็นรายการโปรดแล้ว' });
+      } else {
+        await donorService.removeFavorite(foundationId);
+        setFavorites(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(foundationId);
+          return newSet;
+        });
+        toast({ title: 'นำออกจากรายการโปรดแล้ว' });
+      }
+    } catch (error) {
+      toast({ 
+        title: 'เกิดข้อผิดพลาด', 
+        description: 'กรุณาเข้าสู่ระบบเพื่อใช้งานฟีเจอร์นี้',
+        variant: 'destructive' 
+      });
+    }
+  };
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -149,7 +187,8 @@ const Index = () => {
                 <FoundationCard 
                   key={foundation.id} 
                   foundation={foundation}
-                  onFavorite={(id) => console.log('Favorited:', id)}
+                  onFavorite={handleFavorite}
+                  isFavorited={favorites.has(foundation.id)}
                 />
               ))
             )}

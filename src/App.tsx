@@ -46,6 +46,7 @@ import AdminItemCategories from "./pages/admin/ItemCategories";
 import AdminLayout from "./components/layout/AdminLayout";
 
 import NotFound from "./pages/NotFound";
+import NotificationsPage from "./pages/shared/NotificationsPage";
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,9 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/wishlist" element={<WishlistList />} />
+
+            {/* Shared Routes */}
+            <Route path="/notifications" element={<NotificationsPage />} />
 
             {/* Donor Routes */}
             <Route path="/my-pledges" element={<MyPledges />} />

@@ -52,13 +52,24 @@ const WishlistList = () => {
         console.log('data:', data);
         console.log('wishlistItems:', data?.wishlistItems);
         const itemsArr = Array.isArray(data?.wishlistItems) ? data.wishlistItems : [];
+        // Map backend urgency_level to frontend priority_level
+        const mapUrgencyToPriority = (urgency: string): 'low' | 'medium' | 'high' | 'urgent' => {
+          switch (urgency) {
+            case 'normal': return 'low';
+            case 'urgent': return 'medium';
+            case 'very_urgent': return 'high';
+            case 'extremely_urgent': return 'urgent';
+            default: return 'low';
+          }
+        };
+
         const mapped = itemsArr.map(w => ({
           id: String(w.wishlist_item_id),
           title: w.item_name,
           description: w.description_detail,
           quantity_needed: w.quantity_needed,
           quantity_received: w.quantity_received,
-          priority_level: w.urgency_level,
+          priority_level: mapUrgencyToPriority(w.urgency_level),
           expiry_date: w.posted_date,
           images: w.example_image_url ? [w.example_image_url] : [],
           foundation_name: w.foundation?.foundation_name || '',
@@ -125,4 +136,4 @@ const WishlistList = () => {
   );
 };
 
-export default WishlistList; 
+export default WishlistList;

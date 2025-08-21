@@ -69,8 +69,7 @@ const FoundationReview: React.FC = () => {
         await adminService.approveFoundation(foundationId);
       } else {
         await adminService.rejectFoundation(foundationId, { 
-          rejection_reason: reason || 'ไม่ระบุเหตุผล',
-          admin_notes: reason 
+          verification_notes: reason || 'ไม่ระบุเหตุผล'
         });
       }
       setFoundation(prev => prev ? { ...prev, foundation_status: action === 'approve' ? 'active' : 'rejected' } : null);

@@ -23,8 +23,7 @@ export interface ApproveFoundationRequest {
 }
 
 export interface RejectFoundationRequest {
-  rejection_reason: string;
-  admin_notes?: string;
+  verification_notes: string;
 }
 
 export interface Document {

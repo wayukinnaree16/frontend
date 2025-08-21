@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter } from 'lucide-react';
 import { publicService, FoundationType } from '@/services/public.service';
+import { donorService } from '@/services/donor.service';
+import { toast } from '@/hooks/use-toast';
 
 const FoundationsList = () => {
   const [searchParams] = useSearchParams();
@@ -17,7 +19,7 @@ const FoundationsList = () => {
     if (!u) return '';
     if (u.startsWith('http://') || u.startsWith('https://') || u.startsWith('blob:')) return u;
     const path = u.startsWith('/') ? u : `/${u}`;
-    return `https://backend-lcjt.onrender.com${path}`;
+    return `http://localhost:3001${path}`;
   };
   const [foundations, setFoundations] = useState<any[]>([]);
   const [foundationTypes, setFoundationTypes] = useState<FoundationType[]>([]);
@@ -30,6 +32,7 @@ const FoundationsList = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchTypes = async () => {
@@ -119,6 +122,17 @@ const FoundationsList = () => {
         // สร้าง provinces list จากข้อมูล foundation จริง
         const provs = Array.from(new Set(list.map((f: any) => f?.province))).filter(Boolean);
         setProvinces(['all', ...provs]);
+
+        // Fetch user's favorites
+        try {
+          const favoritesRes = await donorService.getFavorites();
+          const favoritesList = favoritesRes.data || [];
+          const favoriteIds = new Set(favoritesList.map((fav: any) => String(fav.foundation?.foundation_id)));
+          setFavorites(favoriteIds);
+        } catch (favError) {
+          // User might not be logged in, continue without favorites
+          console.log('Could not fetch favorites:', favError);
+        }
       } catch (e) {
         setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
       } finally {
@@ -137,6 +151,32 @@ const FoundationsList = () => {
   const handlePrevPage = () => {
     if (page > 1) {
       setPage(page - 1);
+    }
+  };
+
+  const handleFavorite = async (foundationId: string) => {
+    try {
+      const isFavorited = favorites.has(foundationId);
+      
+      if (!isFavorited) {
+        await donorService.addFavorite({ foundation_id: Number(foundationId) });
+        setFavorites(prev => new Set([...prev, foundationId]));
+        toast({ title: 'เพิ่มเป็นรายการโปรดแล้ว' });
+      } else {
+        await donorService.removeFavorite(foundationId);
+        setFavorites(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(foundationId);
+          return newSet;
+        });
+        toast({ title: 'นำออกจากรายการโปรดแล้ว' });
+      }
+    } catch (error) {
+      toast({ 
+        title: 'เกิดข้อผิดพลาด', 
+        description: 'กรุณาเข้าสู่ระบบเพื่อใช้งานฟีเจอร์นี้',
+        variant: 'destructive' 
+      });
     }
   };
 
@@ -241,7 +281,8 @@ const FoundationsList = () => {
               <FoundationCard 
                 key={foundation.id} 
                 foundation={foundation}
-                onFavorite={(id) => console.log('Favorited:', id)}
+                onFavorite={handleFavorite}
+                isFavorited={favorites.has(foundation.id)}
               />
             ))
           ) : (

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService, User, LoginRequest, RegisterRequest } from '@/services/auth.service';
 import { toast } from '@/hooks/use-toast';
+import { socketService } from '@/services/socket.service';
 
 interface AuthContextType {
   user: User | null;
@@ -33,6 +34,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     if (savedUser && token) {
       setUser(savedUser);
+      // Initialize Socket.IO connection for authenticated user
+      if (savedUser.user_id) {
+        socketService.connect(savedUser.user_id);
+      }
     }
     setIsLoading(false);
   }, []);
@@ -43,6 +48,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await authService.login({ email, password });
       if (response.data?.user) {
         setUser(response.data.user);
+        // Initialize Socket.IO connection
+        if (response.data.user.user_id) {
+          socketService.connect(response.data.user.user_id);
+        }
         toast({
           title: 'เข้าสู่ระบบสำเร็จ',
           description: 'ยินดีต้อนรับกลับมา!'
@@ -95,6 +104,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await authService.logout();
+      // Disconnect Socket.IO
+      socketService.disconnect();
       setUser(null);
       toast({
         title: 'ออกจากระบบสำเร็จ',
@@ -102,6 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } catch (error) {
       // Even if API call fails, clear local state
+      socketService.disconnect();
       setUser(null);
       console.error('Logout error:', error);
     }

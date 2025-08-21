@@ -32,7 +32,8 @@ const Favorites = () => {
     try {
       await donorService.removeFavorite(foundationId);
       toast({ title: 'นำออกจากรายการโปรดแล้ว' });
-      setFavorites((prev) => prev.filter((fav) => String(fav.foundation_id) !== String(foundationId)));
+      // Remove from local state immediately without page refresh
+      setFavorites((prev) => prev.filter((fav) => String(fav.foundation?.foundation_id) !== String(foundationId)));
     } catch {
       toast({ title: 'เกิดข้อผิดพลาด', variant: 'destructive' });
     }

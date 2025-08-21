@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { FoundationSideMenu } from './FoundationSideMenu';
 import { foundationService } from '@/services/foundation.service';
@@ -12,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { Plus, Edit, Trash2, XCircle } from 'lucide-react'; // Added XCircle for removing images
 
 const defaultForm = {
@@ -26,6 +28,8 @@ const defaultForm = {
 };
 
 const FoundationWishlist = () => {
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,8 +38,31 @@ const FoundationWishlist = () => {
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState<any>(defaultForm);
   const [saving, setSaving] = useState(false);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+
   const [deleting, setDeleting] = useState(false);
+
+  // Check authentication
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      toast({
+        title: 'กรุณาเข้าสู่ระบบ',
+        description: 'คุณต้องเข้าสู่ระบบเพื่อเข้าถึงหน้านี้',
+        variant: 'destructive'
+      });
+      navigate('/login');
+      return;
+    }
+    
+    if (user.user_type !== 'foundation_admin') {
+      toast({
+        title: 'ไม่มีสิทธิ์เข้าถึง',
+        description: 'หน้านี้สำหรับผู้ดูแลมูลนิธิเท่านั้น',
+        variant: 'destructive'
+      });
+      navigate('/');
+      return;
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -52,13 +79,21 @@ const FoundationWishlist = () => {
       } else if (itemsRes.data && 'wishlist_items' in itemsRes.data && Array.isArray((itemsRes.data as any).wishlist_items)) {
         apiItems = (itemsRes.data as any).wishlist_items;
       }
+      // Map backend urgency_level to frontend priority_level correctly
+      const mapUrgencyToPriority = (urgency: string) => {
+        if (urgency === 'normal') return 'low';
+        if (urgency === 'urgent') return 'medium'; // urgent -> สำคัญ
+        if (urgency === 'very_urgent') return 'high'; // very_urgent -> สำคัญมาก
+        if (urgency === 'extremely_urgent') return 'urgent'; // extremely_urgent -> เร่งด่วน
+        return 'medium';
+      };
       const mappedItems = apiItems.map((item: any) => ({
         id: item.wishlist_item_id,
         title: item.title || item.item_name,
         description: item.description || item.description_detail,
         quantity_needed: item.quantity_needed,
         quantity_received: item.quantity_received,
-        priority_level: item.urgency_level === 'urgent' ? 'urgent' : (item.urgency_level === 'very_urgent' ? 'high' : 'low'),
+        priority_level: mapUrgencyToPriority(item.urgency_level),
         status: item.status,
         images: item.example_image_url ? [item.example_image_url] : [],
         foundation_name: item.foundation?.foundation_name,
@@ -100,11 +135,20 @@ const FoundationWishlist = () => {
 
   const openEdit = (item: any) => {
     setEditing(item);
+    // Map backend urgency_level to frontend priority_level correctly
+    const mapUrgencyToPriority = (urgency: string) => {
+      if (urgency === 'normal') return 'low';
+      if (urgency === 'urgent') return 'medium'; // urgent -> สำคัญ
+      if (urgency === 'very_urgent') return 'high'; // very_urgent -> สำคัญมาก
+      if (urgency === 'extremely_urgent') return 'urgent'; // extremely_urgent -> เร่งด่วน
+      return 'medium'; // default
+    };
+    
     setForm({
       title: item.item_name || '', // Use item_name from backend
       description: item.description_detail || '', // Use description_detail from backend
       quantity_needed: item.quantity_needed || 1,
-      priority_level: item.urgency_level === 'urgent' ? 'urgent' : (item.urgency_level === 'very_urgent' ? 'high' : 'low'), // Map backend urgency_level to frontend priority_level
+      priority_level: mapUrgencyToPriority(item.urgency_level || 'urgent'),
       category_id: item.category_id ? String(item.category_id) : '',
       imageFiles: [],
       imageUrls: item.example_image_url ? [item.example_image_url] : [], // Use example_image_url directly
@@ -178,11 +222,12 @@ const FoundationWishlist = () => {
       const finalImages = [...form.imageUrls, ...uploadedImageUrls].filter(url => url.trim() !== '');
 
       // Map frontend priority_level to backend urgency_level
-      const mapPriorityToUrgency = (priority: string) => {
+      const mapPriorityToUrgency = (priority: string): 'normal' | 'urgent' | 'very_urgent' | 'extremely_urgent' => {
         if (priority === 'low') return 'normal';
-        if (priority === 'medium') return 'urgent';
-        if (priority === 'high' || priority === 'urgent') return 'very_urgent';
-        return 'normal';
+        if (priority === 'medium') return 'urgent'; // สำคัญ -> urgent
+        if (priority === 'high') return 'very_urgent'; // สำคัญมาก -> very_urgent  
+        if (priority === 'urgent') return 'extremely_urgent'; // เร่งด่วน -> extremely_urgent
+        return 'urgent'; // default
       };
 
       if (editing) {
@@ -201,6 +246,14 @@ const FoundationWishlist = () => {
         // Update local state immediately
         if (res.data && res.data.wishlist_item) {
           const updated = res.data.wishlist_item;
+          // Map backend urgency_level to frontend priority_level correctly
+          const mapUrgencyToPriority = (urgency: string) => {
+            if (urgency === 'normal') return 'low';
+            if (urgency === 'urgent') return 'medium'; // urgent -> สำคัญ
+            if (urgency === 'very_urgent') return 'high'; // very_urgent -> สำคัญมาก
+            if (urgency === 'extremely_urgent') return 'urgent'; // extremely_urgent -> เร่งด่วน
+            return 'medium';
+          };
           setItems(prev => prev.map(item =>
             item.id === updated.wishlist_item_id
               ? {
@@ -210,7 +263,7 @@ const FoundationWishlist = () => {
                   description: updated.description_detail,
                   quantity_needed: updated.quantity_needed,
                   quantity_received: updated.quantity_received,
-                  priority_level: updated.urgency_level, // Assuming backend sends urgency_level
+                  priority_level: mapUrgencyToPriority(updated.urgency_level), // Map urgency_level to priority_level
                   status: updated.status,
                   images: updated.example_image_url ? [updated.example_image_url] : [],
                   foundation_name: updated.foundation?.foundation_name,
@@ -224,13 +277,16 @@ const FoundationWishlist = () => {
           ));
         }
         toast({ title: 'แก้ไขรายการสำเร็จ' });
+        // Refresh data to ensure UI is in sync with backend
+        fetchData();
       } else {
         // Map frontend fields to backend schema for CREATE
-        const mapPriorityToUrgency = (priority: string) => {
+        const mapPriorityToUrgency = (priority: string): 'normal' | 'urgent' | 'very_urgent' | 'extremely_urgent' => {
           if (priority === 'low') return 'normal';
-          if (priority === 'medium') return 'urgent';
-          if (priority === 'high' || priority === 'urgent') return 'very_urgent';
-          return 'normal';
+          if (priority === 'medium') return 'urgent'; // สำคัญ -> urgent
+          if (priority === 'high') return 'very_urgent'; // สำคัญมาก -> very_urgent
+          if (priority === 'urgent') return 'extremely_urgent'; // เร่งด่วน -> extremely_urgent
+          return 'urgent'; // default
         };
         const createBody = {
           item_name: form.title,
@@ -256,16 +312,20 @@ const FoundationWishlist = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
+  const handleDelete = async (itemId: string) => {
     setDeleting(true);
     try {
-      await foundationService.deleteWishlistItem(deleteId);
+      await foundationService.deleteWishlistItem(itemId);
+      // Update local state immediately without refetching
+      setItems(prev => prev.filter(item => item.id !== itemId));
       toast({ title: 'ลบรายการสำเร็จ' });
-      setDeleteId(null);
-      fetchData();
-    } catch {
-      toast({ title: 'เกิดข้อผิดพลาด', variant: 'destructive' });
+    } catch (error: any) {
+      console.error('Error deleting wishlist item:', error);
+      toast({ 
+        title: 'เกิดข้อผิดพลาด', 
+        description: error.response?.data?.message || error.message,
+        variant: 'destructive' 
+      });
     } finally {
       setDeleting(false);
     }
@@ -295,6 +355,8 @@ const FoundationWishlist = () => {
                     ...item,
                     category: item.category?.name || item.category || '',
                     foundation_name: undefined,
+                    // Use already mapped priority_level from fetchData
+                    priority_level: item.priority_level
                   }} showFoundation={false} />
                   <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <AlertDialog>
@@ -310,7 +372,7 @@ const FoundationWishlist = () => {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => { setDeleteId(item.id); setTimeout(handleDelete, 100); }} disabled={deleting}>
+                          <AlertDialogAction onClick={() => handleDelete(item.id)} disabled={deleting}>
                             {deleting ? 'กำลังลบ...' : 'ลบ'}
                           </AlertDialogAction>
                         </AlertDialogFooter>
