@@ -34,8 +34,8 @@ export const WishlistItemCard: React.FC<WishlistItemCardProps> = ({
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'bg-destructive text-destructive-foreground';
-      case 'high': return 'bg-secondary text-secondary-foreground';
-      case 'medium': return 'bg-accent text-accent-foreground';
+      case 'high': return 'bg-orange-500 text-white';
+      case 'medium': return 'bg-yellow-500 text-white';
       default: return 'bg-muted text-muted-foreground';
     }
   };

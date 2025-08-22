@@ -31,8 +31,8 @@ export interface CreateWishlistItemRequest {
   quantity_needed: number;
   quantity_unit: string;
   category_id: number;
-  // Backend expects urgency_level: 'normal' | 'urgent' | 'very_urgent'
-  urgency_level?: 'normal' | 'urgent' | 'very_urgent';
+  // Backend expects urgency_level: 'normal' | 'urgent' | 'very_urgent' | 'extremely_urgent'
+  urgency_level?: 'normal' | 'urgent' | 'very_urgent' | 'extremely_urgent';
   status?: 'open_for_donation' | 'temporarily_closed' | 'fulfilled' | 'archived';
   example_image_url?: string; // Single URL supported by backend; multiple can be handled by using first image
 }

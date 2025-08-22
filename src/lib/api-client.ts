@@ -41,10 +41,15 @@ class ApiClient {
       },
       (error) => {
         if (error.response?.status === 401) {
-          // Clear token and redirect to login
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          window.location.href = '/login';
+          // Check if this is a public API call - don't redirect for public endpoints
+          const isPublicAPI = error.config?.url?.includes('/api/public/');
+          
+          if (!isPublicAPI) {
+            // Clear token and redirect to login only for protected endpoints
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+          }
         }
         return Promise.reject(error);
       }

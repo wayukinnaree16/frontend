@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { XCircle } from 'lucide-react';
+import { XCircle, Heart, Users, Gift, ArrowLeft, Edit, Save, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { foundationService } from '@/services/foundation.service';
 import { sharedService } from '@/services/shared.service';
@@ -45,24 +45,24 @@ const WishlistDetail = () => {
   // Helper function to map backend urgency_level to frontend priority_level
   const mapUrgencyToPriority = (urgency: string) => {
     const urgencyMap: { [key: string]: string } = {
-      'normal': 'ปกติ',
-      'urgent': 'สำคัญ',
-      'very_urgent': 'สำคัญมาก',
-      'extremely_urgent': 'เร่งด่วน'
+      'normal': 'low',
+      'urgent': 'medium',
+      'very_urgent': 'high',
+      'extremely_urgent': 'urgent'
     };
-    return urgencyMap[urgency] || 'ปกติ';
+    return urgencyMap[urgency] || 'low';
   };
 
   useEffect(() => {
     if (item) {
       setEditItem({
         ...item,
-        // Convert Thai priority_level back to English for editing
+        // Convert frontend priority_level back to backend urgency_level for editing
         priority_level: (() => {
-          if (item.priority_level === 'ปกติ') return 'normal';
-          if (item.priority_level === 'สำคัญ') return 'urgent';
-          if (item.priority_level === 'สำคัญมาก') return 'very_urgent';
-          if (item.priority_level === 'เร่งด่วน') return 'extremely_urgent';
+          if (item.priority_level === 'low') return 'normal';
+          if (item.priority_level === 'medium') return 'urgent';
+          if (item.priority_level === 'high') return 'very_urgent';
+          if (item.priority_level === 'urgent') return 'extremely_urgent';
           return 'normal';
         })(),
         imageUrls: item.images || [], // Initialize imageUrls with existing images
@@ -137,26 +137,95 @@ const WishlistDetail = () => {
     fetchItem();
   }, [id]);
 
-  if (loading) return <div className="text-center py-8">Loading...</div>;
-  if (notFound) {
+  if (loading) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-16 max-w-2xl">
-          <div className="border rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-semibold mb-2">ไม่พบรายการที่ต้องการ</h2>
-            <p className="text-muted-foreground mb-6">
-              รายการนี้อาจถูกปิดรับบริจาค ถูกลบ หรือยังไม่พร้อมสำหรับการแสดงผลสาธารณะ
-            </p>
-            <div className="flex justify-center gap-3">
-              <Button variant="secondary" onClick={() => window.history.back()}>ย้อนกลับ</Button>
-              <Button onClick={() => navigate('/wishlist')}>กลับไปหน้ารายการ</Button>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+          <div className="container mx-auto px-4 py-20">
+            <div className="text-center">
+              <div className="inline-block p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl mb-8 animate-pulse">
+                <div className="bg-white rounded-2xl px-8 py-4">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 font-semibold text-lg">กำลังโหลดข้อมูล...</span>
+                </div>
+              </div>
+              <div className="space-y-4 max-w-md mx-auto">
+                <div className="h-4 bg-gradient-to-r from-blue-200 to-purple-200 rounded-full animate-pulse"></div>
+                <div className="h-4 bg-gradient-to-r from-purple-200 to-pink-200 rounded-full animate-pulse"></div>
+                <div className="h-4 bg-gradient-to-r from-pink-200 to-blue-200 rounded-full animate-pulse"></div>
+              </div>
             </div>
           </div>
         </div>
       </Layout>
     );
   }
-  if (error || !item) return <div className="text-center py-8 text-red-500">{error || 'ไม่พบข้อมูล'}</div>;
+  if (notFound) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-pink-50">
+          <div className="container mx-auto px-4 py-20">
+            <div className="text-center max-w-2xl mx-auto">
+              <div className="inline-block p-4 bg-gradient-to-r from-red-500 to-orange-500 rounded-3xl mb-8">
+                <div className="bg-white rounded-2xl px-8 py-4">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600 font-semibold text-lg">ไม่พบรายการ</span>
+                </div>
+              </div>
+              <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">ไม่พบรายการที่ต้องการ</h1>
+              <p className="text-gray-600 text-xl mb-8 leading-relaxed">
+                รายการนี้อาจถูกปิดรับบริจาค ถูกลบ หรือยังไม่พร้อมสำหรับการแสดงผลสาธารณะ
+              </p>
+              <div className="flex justify-center gap-4">
+                <Button 
+                  variant="secondary" 
+                  onClick={() => window.history.back()}
+                  size="lg"
+                  className="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  ย้อนกลับ
+                </Button>
+                <Button 
+                  onClick={() => navigate('/wishlist')}
+                  size="lg"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
+                >
+                  กลับไปหน้ารายการ
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+  if (error) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50">
+          <div className="container mx-auto px-4 py-20">
+            <div className="text-center max-w-2xl mx-auto">
+              <div className="inline-block p-4 bg-gradient-to-r from-red-500 to-orange-500 rounded-3xl mb-8">
+                <div className="bg-white rounded-2xl px-8 py-4">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600 font-semibold text-lg">เกิดข้อผิดพลาด</span>
+                </div>
+              </div>
+              <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">เกิดข้อผิดพลาด</h1>
+              <p className="text-gray-600 text-xl mb-8 leading-relaxed">{error}</p>
+              <Button 
+                onClick={() => navigate('/wishlist')} 
+                size="lg" 
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300"
+              >
+                <ArrowLeft className="mr-3 h-5 w-5" />
+                กลับไปหน้ารายการ
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+  if (!item) return <div className="text-center py-8 text-red-500">ไม่พบข้อมูล</div>;
 
   const handleSave = async () => {
     try {
@@ -197,17 +266,17 @@ const WishlistDetail = () => {
       // Handle urgency_level - this is the most important field for the current issue
       const priorityValue = editItem?.priority_level || item?.priority_level;
       
-      // Map Thai priority values to English backend values
-      if (priorityValue === 'ปกติ') {
+      // Map frontend priority values to backend urgency_level values
+      if (priorityValue === 'low') {
         updatedData.urgency_level = 'normal';
-      } else if (priorityValue === 'สำคัญ') {
+      } else if (priorityValue === 'medium') {
         updatedData.urgency_level = 'urgent';
-      } else if (priorityValue === 'สำคัญมาก') {
+      } else if (priorityValue === 'high') {
         updatedData.urgency_level = 'very_urgent';
-      } else if (priorityValue === 'เร่งด่วน') {
+      } else if (priorityValue === 'urgent') {
         updatedData.urgency_level = 'extremely_urgent';
       } else if (['normal', 'urgent', 'very_urgent', 'extremely_urgent'].includes(priorityValue)) {
-        // If already in English format, use as is
+        // If already in backend format, use as is
         updatedData.urgency_level = priorityValue;
       } else {
         updatedData.urgency_level = 'normal';
@@ -384,175 +453,263 @@ const WishlistDetail = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex justify-between items-center">
-              <Input
-                value={isEditing ? (editItem?.title || '') : item.title}
-                onChange={(e) => setEditItem({ ...editItem, title: e.target.value })}
-                readOnly={!isEditing}
-                className="text-3xl font-bold"
-              />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+        {/* Hero Section */}
+        <section className="py-20 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 relative overflow-hidden">
+          <div className="absolute inset-0 bg-black/20"></div>
+          <div className="absolute inset-0">
+              <div className="absolute top-10 left-10 w-12 h-12 bg-white/10 rounded-full animate-pulse"></div>
+              <div className="absolute top-32 right-20 w-10 h-10 bg-white/10 rounded-full animate-pulse delay-1000"></div>
+              <div className="absolute bottom-20 left-1/4 w-8 h-8 bg-white/10 rounded-full animate-pulse delay-2000"></div>
+            </div>
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-6">
+                <Button
+                  onClick={() => navigate('/wishlist')}
+                  className="bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-300 rounded-xl px-6 py-3 font-semibold shadow-lg"
+                >
+                  <ArrowLeft className="h-5 w-5 mr-2" />
+                  กลับ
+                </Button>
+                <div>
+                  <h1 className="text-5xl font-bold text-white mb-2">รายละเอียดรายการ</h1>
+                  <p className="text-white/80 text-xl">ข้อมูลรายการความต้องการจากมูลนิธิ</p>
+                </div>
+              </div>
+              
               {isFoundation && (
-                <Button onClick={() => setIsEditing(!isEditing)}>
-                  {isEditing ? 'ยกเลิก' : 'แก้ไข'}
-                </Button>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="category">หมวดหมู่</Label>
-                <Select
-                  value={isEditing ? (editItem?.category_id || '') : item.category_id}
-                  onValueChange={(value) => setEditItem({ ...editItem, category_id: value })}
-                  disabled={!isEditing}
+                <Button
+                  onClick={() => setIsEditing(!isEditing)}
+                  className={`${isEditing 
+                    ? 'bg-red-500/20 backdrop-blur-sm border border-red-300/30 text-red-100 hover:bg-red-500/30' 
+                    : 'bg-green-500/20 backdrop-blur-sm border border-green-300/30 text-green-100 hover:bg-green-500/30'
+                  } transition-all duration-300 rounded-xl px-6 py-3 font-semibold shadow-lg`}
                 >
-                  <SelectTrigger>
-                    <SelectValue>
-                      {isEditing 
-                        ? categories.find(cat => String(cat.category_id) === editItem?.category_id)?.name || 'เลือกหมวดหมู่'
-                        : item.category || 'ไม่ระบุหมวดหมู่'
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((cat: any) => (
-                      <SelectItem key={cat.category_id} value={String(cat.category_id)}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="priority">ระดับความสำคัญ</Label>
-                <Select
-                  value={isEditing ? (editItem?.priority_level || 'normal') : (() => {
-                    if (item.priority_level === 'ปกติ') return 'normal';
-                    if (item.priority_level === 'สำคัญ') return 'urgent';
-                    if (item.priority_level === 'สำคัญมาก') return 'very_urgent';
-                    if (item.priority_level === 'เร่งด่วน') return 'extremely_urgent';
-                    return 'normal';
-                  })()} 
-                  onValueChange={(value) => setEditItem({ ...editItem, priority_level: value })}
-                  disabled={!isEditing}
-                >
-                  <SelectTrigger>
-                    <SelectValue>
-                      {isEditing 
-                        ? mapUrgencyToPriority(editItem?.priority_level || 'normal') 
-                        : item.priority_level
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">ปกติ</SelectItem>
-                    <SelectItem value="urgent">สำคัญ</SelectItem>
-                    <SelectItem value="very_urgent">สำคัญมาก</SelectItem>
-                    <SelectItem value="extremely_urgent">เร่งด่วน</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="description">รายละเอียด</Label>
-                <Textarea
-                  value={isEditing ? (editItem?.description || '') : item.description}
-                  onChange={(e) => setEditItem({ ...editItem, description: e.target.value })}
-                  readOnly={!isEditing}
-                  className="min-h-[80px]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="quantity_needed">จำนวนที่ต้องการ</Label>
-                  <Input
-                    type="number"
-                    value={isEditing ? (editItem?.quantity_needed || '') : item.quantity_needed}
-                    onChange={(e) => setEditItem({ ...editItem, quantity_needed: e.target.value })}
-                    readOnly={!isEditing}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="quantity_unit">หน่วย</Label>
-                  <Input
-                    value={isEditing ? (editItem?.quantity_unit || '') : item.quantity_unit}
-                    onChange={(e) => setEditItem({ ...editItem, quantity_unit: e.target.value })}
-                    readOnly={!isEditing}
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="images">รูปภาพ</Label>
-                {/* Display existing image URLs */}
-                {isEditing && editItem?.imageUrls && editItem.imageUrls.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    <div className="relative">
-                      <img src={editItem.imageUrls[0]} alt="Existing" className="w-24 h-24 object-cover rounded" />
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="absolute top-0 right-0 h-6 w-6 text-red-500"
-                        onClick={() => setEditItem({ ...editItem, imageUrls: [] })}
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {/* Display newly selected image files (if any) */}
-                {isEditing && imageFiles.length > 0 && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm">{imageFiles[0].name}</span>
-                    <Button type="button" size="icon" variant="ghost" onClick={() => setImageFiles([])}>
-                      <XCircle className="w-4 h-4 text-red-500" />
-                    </Button>
-                  </div>
-                )}
-                {isEditing && (
-                  <Input type="file" onChange={(e) => {
-                    if (e.target.files) {
-                      setImageFiles(Array.from(e.target.files).slice(0, 1)); // Only allow one file
-                    }
-                  }} className="mb-2" />
-                )}
-                {!isEditing && item.images && item.images.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    <img src={item.images[0]} alt="Item" className="w-24 h-24 object-cover rounded" />
-                  </div>
-                )}
-                {!isEditing && (!item.images || item.images.length === 0) && (
-                  <p className="text-muted-foreground">ไม่มีรูปภาพ</p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="foundation_name">มูลนิธิ</Label>
-                <Input id="foundation_name" value={item.foundation_name} readOnly className="bg-gray-100" />
-              </div>
-
-              {isEditing && (
-                <Button onClick={handleSave} className="mt-4">
-                  บันทึกการเปลี่ยนแปลง
-                </Button>
-              )}
-
-              {!isFoundation && !isEditing && (
-                <Button onClick={() => navigate(`/donor/pledge-form?wishlist_item_id=${item.id}`)} className="mt-4">
-                  บริจาคสิ่งนี้
+                  {isEditing ? (
+                    <>
+                      <X className="h-5 w-5 mr-2" />
+                      ยกเลิก
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="h-5 w-5 mr-2" />
+                      แก้ไข
+                    </>
+                  )}
                 </Button>
               )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </section>
+
+        {/* Main Content */}
+        <section className="py-16">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-2xl rounded-3xl overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-b border-gray-200/50">
+                <CardTitle className="flex justify-between items-center">
+                  <Input
+                    value={isEditing ? (editItem?.title || '') : item.title}
+                    onChange={(e) => setEditItem({ ...editItem, title: e.target.value })}
+                    readOnly={!isEditing}
+                    className="text-3xl font-bold bg-transparent border-0 focus:ring-0 p-0 text-gray-800"
+                  />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="grid gap-8">
+                  <div className="grid gap-4">
+                    <Label htmlFor="category" className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                      <Gift className="h-5 w-5 text-blue-500" />
+                      หมวดหมู่
+                    </Label>
+                    <Select
+                      value={isEditing ? (editItem?.category_id || '') : item.category_id}
+                      onValueChange={(value) => setEditItem({ ...editItem, category_id: value })}
+                      disabled={!isEditing}
+                    >
+                      <SelectTrigger className="h-12 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200/50 rounded-xl focus:ring-2 focus:ring-blue-500/20 transition-all duration-300">
+                        <SelectValue>
+                          {isEditing 
+                            ? categories.find(cat => String(cat.category_id) === editItem?.category_id)?.name || 'เลือกหมวดหมู่'
+                            : item.category || 'ไม่ระบุหมวดหมู่'
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-xl">
+                        {categories.map((cat: any) => (
+                          <SelectItem key={cat.category_id} value={String(cat.category_id)} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-lg">
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-4">
+                    <Label htmlFor="priority" className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                      <Heart className="h-5 w-5 text-red-500" />
+                      ระดับความสำคัญ
+                    </Label>
+                    <Select
+                      value={isEditing ? (editItem?.priority_level || 'normal') : (() => {
+                        if (item.priority_level === 'ปกติ') return 'normal';
+                        if (item.priority_level === 'สำคัญ') return 'urgent';
+                        if (item.priority_level === 'สำคัญมาก') return 'very_urgent';
+                        if (item.priority_level === 'เร่งด่วน') return 'extremely_urgent';
+                        return 'normal';
+                      })()} 
+                      onValueChange={(value) => setEditItem({ ...editItem, priority_level: value })}
+                      disabled={!isEditing}
+                    >
+                      <SelectTrigger className="h-12 bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200/50 rounded-xl focus:ring-2 focus:ring-red-500/20 transition-all duration-300">
+                        <SelectValue>
+                          {isEditing 
+                            ? mapUrgencyToPriority(editItem?.priority_level || 'normal') 
+                            : item.priority_level
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                       <SelectContent className="bg-white/95 backdrop-blur-sm border-0 shadow-2xl rounded-xl">
+                         <SelectItem value="normal" className="hover:bg-gradient-to-r hover:from-green-50 hover:to-blue-50 rounded-lg">ปกติ</SelectItem>
+                         <SelectItem value="urgent" className="hover:bg-gradient-to-r hover:from-yellow-50 hover:to-orange-50 rounded-lg">สำคัญ</SelectItem>
+                         <SelectItem value="very_urgent" className="hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 rounded-lg">สำคัญมาก</SelectItem>
+                         <SelectItem value="extremely_urgent" className="hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 rounded-lg">เร่งด่วน</SelectItem>
+                       </SelectContent>
+                     </Select>
+                   </div>
+
+                   <div className="grid gap-4">
+                     <Label htmlFor="description" className="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                       <Users className="h-5 w-5 text-green-500" />
+                       รายละเอียด
+                     </Label>
+                     <Textarea
+                       value={isEditing ? (editItem?.description || '') : item.description}
+                       onChange={(e) => setEditItem({ ...editItem, description: e.target.value })}
+                       readOnly={!isEditing}
+                       className="min-h-[120px] bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200/50 rounded-xl focus:ring-2 focus:ring-green-500/20 transition-all duration-300 resize-none"
+                       placeholder="กรอกรายละเอียดของรายการที่ต้องการ..."
+                     />
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-6">
+                     <div className="grid gap-4">
+                       <Label htmlFor="quantity_needed" className="text-lg font-semibold text-gray-700">จำนวนที่ต้องการ</Label>
+                       <Input
+                         type="number"
+                         value={isEditing ? (editItem?.quantity_needed || '') : item.quantity_needed}
+                         onChange={(e) => setEditItem({ ...editItem, quantity_needed: e.target.value })}
+                         readOnly={!isEditing}
+                         className="h-12 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200/50 rounded-xl focus:ring-2 focus:ring-purple-500/20 transition-all duration-300"
+                         placeholder="0"
+                       />
+                     </div>
+                     <div className="grid gap-4">
+                       <Label htmlFor="quantity_unit" className="text-lg font-semibold text-gray-700">หน่วย</Label>
+                       <Input
+                         value={isEditing ? (editItem?.quantity_unit || '') : item.quantity_unit}
+                         onChange={(e) => setEditItem({ ...editItem, quantity_unit: e.target.value })}
+                         readOnly={!isEditing}
+                         className="h-12 bg-gradient-to-r from-pink-50 to-orange-50 border-2 border-pink-200/50 rounded-xl focus:ring-2 focus:ring-pink-500/20 transition-all duration-300"
+                         placeholder="ชิ้น, กิโลกรัม, ลิตร..."
+                       />
+                     </div>
+                   </div>
+
+                   <div className="grid gap-4">
+                     <Label htmlFor="images" className="text-lg font-semibold text-gray-700">รูปภาพ</Label>
+                     {/* Display existing image URLs */}
+                     {isEditing && editItem?.imageUrls && editItem.imageUrls.length > 0 && (
+                       <div className="flex flex-wrap gap-4 mb-4">
+                         <div className="relative group">
+                           <img src={editItem.imageUrls[0]} alt="Existing" className="w-32 h-32 object-cover rounded-2xl shadow-lg group-hover:shadow-xl transition-all duration-300" />
+                           <Button
+                             type="button"
+                             size="icon"
+                             variant="ghost"
+                             className="absolute -top-2 -right-2 h-8 w-8 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg"
+                             onClick={() => setEditItem({ ...editItem, imageUrls: [] })}
+                           >
+                             <XCircle className="w-4 h-4" />
+                           </Button>
+                         </div>
+                       </div>
+                     )}
+                     {/* Display newly selected image files (if any) */}
+                     {isEditing && imageFiles.length > 0 && (
+                       <div className="flex items-center gap-3 mb-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200/50">
+                         <span className="text-sm font-medium text-gray-700">{imageFiles[0].name}</span>
+                         <Button type="button" size="icon" variant="ghost" onClick={() => setImageFiles([])} className="h-6 w-6 text-red-500 hover:text-red-700">
+                           <XCircle className="w-4 h-4" />
+                         </Button>
+                       </div>
+                     )}
+                     {isEditing && (
+                       <Input 
+                         type="file" 
+                         onChange={(e) => {
+                           if (e.target.files) {
+                             setImageFiles(Array.from(e.target.files).slice(0, 1)); // Only allow one file
+                           }
+                         }} 
+                         className="h-12 bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-200/50 rounded-xl focus:ring-2 focus:ring-orange-500/20 transition-all duration-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-orange-500 file:to-yellow-500 file:text-white file:font-semibold hover:file:from-orange-600 hover:file:to-yellow-600" 
+                         accept="image/*"
+                       />
+                     )}
+                     {!isEditing && item.images && item.images.length > 0 && (
+                       <div className="flex flex-wrap gap-4">
+                         <img src={item.images[0]} alt="Item" className="w-32 h-32 object-cover rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300" />
+                       </div>
+                     )}
+                     {!isEditing && (!item.images || item.images.length === 0) && (
+                       <div className="p-8 bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-300 text-center">
+                         <p className="text-gray-500 text-lg">ไม่มีรูปภาพ</p>
+                       </div>
+                     )}
+                   </div>
+
+                   <div className="grid gap-4">
+                     <Label htmlFor="foundation_name" className="text-lg font-semibold text-gray-700">มูลนิธิ</Label>
+                     <Input 
+                       id="foundation_name" 
+                       value={item.foundation_name} 
+                       readOnly 
+                       className="h-12 bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200/50 rounded-xl text-gray-700 font-medium" 
+                     />
+                   </div>
+
+                   {/* Action Buttons */}
+                   <div className="flex gap-4 pt-6">
+                     {isEditing && (
+                       <Button 
+                         onClick={handleSave} 
+                         size="lg"
+                         className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300"
+                       >
+                         <Save className="mr-3 h-5 w-5" />
+                         บันทึกการเปลี่ยนแปลง
+                       </Button>
+                     )}
+
+                     {!isFoundation && !isEditing && (
+                       <Button 
+                         onClick={() => navigate(`/donor/pledge-form?wishlist_item_id=${item.id}`)} 
+                         size="lg"
+                         className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 px-8 rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300"
+                       >
+                         <Heart className="mr-3 h-5 w-5" />
+                         บริจาคสิ่งนี้
+                       </Button>
+                     )}
+                   </div>
+                 </div>
+               </CardContent>
+             </Card>
+           </div>
+         </section>
+       </div>
     </Layout>
   );
 };

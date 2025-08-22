@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { publicService, FoundationType } from '@/services/public.service';
 import { donorService } from '@/services/donor.service';
 import { toast } from '@/hooks/use-toast';
@@ -192,42 +192,63 @@ const FoundationsList = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        {/* Page Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">ค้นหามูลนิธิ</h1>
-          <p className="text-muted-foreground text-lg">
-            ค้นหามูลนิธิที่ต้องการความช่วยเหลือจากทั่วประเทศไทย
-          </p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-float"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-orange-400/20 to-pink-400/20 rounded-full blur-3xl animate-float" style={{animationDelay: '2s'}}></div>
         </div>
+        
+        <div className="container mx-auto px-4 py-8 relative z-10">
+          {/* Enhanced Page Header */}
+          <div className="text-center mb-12">
+            <div className="inline-block p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mb-6 animate-glow">
+              <Search className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-gradient-shift">
+              ค้นหามูลนิธิ
+            </h1>
+            <p className="text-muted-foreground text-xl max-w-2xl mx-auto leading-relaxed">
+              ค้นหามูลนิธิที่ต้องการความช่วยเหลือจากทั่วประเทศไทย พร้อมสร้างการเปลี่ยนแปลงที่ดีให้กับสังคม
+            </p>
+          </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-soft p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div className="space-y-2">
-              <Label htmlFor="search">ค้นหาชื่อมูลนิธิ</Label>
+          {/* Enhanced Filters */}
+          <div className="glass rounded-2xl p-8 mb-12 border border-white/20 shadow-2xl backdrop-blur-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                <Filter className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-2xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                ตัวกรองการค้นหา
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div className="space-y-3">
+              <Label htmlFor="search" className="text-sm font-medium text-gray-700">ค้นหาชื่อมูลนิธิ</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   id="search"
-                  placeholder="ชื่อมูลนิธิ..."
+                  type="text"
+                  placeholder="กรอกชื่อมูลนิธิที่ต้องการค้นหา..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="w-full pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all duration-200 hover:border-gray-300"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>ประเภทมูลนิธิ</Label>
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-gray-700">ประเภทมูลนิธิ</Label>
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="เลือกประเภท" />
+                <SelectTrigger className="w-full h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all duration-200 hover:border-gray-300">
+                  <SelectValue placeholder="เลือกประเภทมูลนิธิ" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">ทั้งหมด</SelectItem>
+                <SelectContent className="rounded-xl border-gray-200">
+                  <SelectItem value="all" className="rounded-lg">ทุกประเภท</SelectItem>
                   {foundationTypes.map((type) => (
-                    <SelectItem key={type.type_id} value={String(type.type_id)}>
+                    <SelectItem key={type.type_id} value={String(type.type_id)} className="rounded-lg">
                       {type.name}
                     </SelectItem>
                   ))}
@@ -235,33 +256,33 @@ const FoundationsList = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>จังหวัด</Label>
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-gray-700">จังหวัด</Label>
               <Select value={selectedProvince} onValueChange={setSelectedProvince}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all duration-200 hover:border-gray-300">
                   <SelectValue placeholder="เลือกจังหวัด" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl border-gray-200">
                   {provinces.map((province) => (
-                    <SelectItem key={province} value={province}>
-                      {province === 'all' ? 'ทั้งหมด' : province}
+                    <SelectItem key={province} value={province} className="rounded-lg">
+                      {province === 'all' ? 'ทุกจังหวัด' : province}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>เรียงตาม</Label>
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-gray-700">เรียงตาม</Label>
               <Select value={sortBy} onValueChange={v => setSortBy(v as typeof sortBy)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="เรียงตาม" />
+                <SelectTrigger className="w-full h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all duration-200 hover:border-gray-300">
+                  <SelectValue placeholder="เลือกการเรียง" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="foundation_name">ชื่อ ก-ฮ</SelectItem>
-                  <SelectItem value="foundation_name_desc">ชื่อ ฮ-ก</SelectItem>
-                  <SelectItem value="created_at">วันที่สร้างล่าสุด</SelectItem>
-                  <SelectItem value="created_at_desc">วันที่สร้างเก่าสุด</SelectItem>
+                <SelectContent className="rounded-xl border-gray-200">
+                  <SelectItem value="foundation_name" className="rounded-lg">ชื่อมูลนิธิ (A-Z)</SelectItem>
+                  <SelectItem value="foundation_name_desc" className="rounded-lg">ชื่อมูลนิธิ (Z-A)</SelectItem>
+                  <SelectItem value="created_at" className="rounded-lg">วันที่สร้าง (ใหม่-เก่า)</SelectItem>
+                  <SelectItem value="created_at_desc" className="rounded-lg">วันที่สร้าง (เก่า-ใหม่)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -274,33 +295,113 @@ const FoundationsList = () => {
           </div>
         </div>
 
-        {/* Results */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {foundations.length > 0 ? (
-            foundations.map((foundation) => (
-              <FoundationCard 
-                key={foundation.id} 
-                foundation={foundation}
-                onFavorite={handleFavorite}
-                isFavorited={favorites.has(foundation.id)}
-              />
-            ))
-          ) : (
-            <div className="col-span-full text-center py-12">
-              <h2 className="text-2xl font-bold mb-4">ไม่พบมูลนิธิที่คุณต้องการ</h2>
-              <p className="text-muted-foreground text-lg">
-                ลองค้นหาด้วยคำคล้ายหรือเปลี่ยนตัวกรองดู
-              </p>
+          {/* Enhanced Results Section */}
+          <div className="mb-12">
+            <div className="flex justify-between items-center mb-8">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg">
+                  <Search className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                    ผลการค้นหา
+                  </h2>
+                  <p className="text-gray-600 mt-1">
+                    พบ {foundations.length} มูลนิธิที่ตรงกับเงื่อนไขการค้นหา
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Results Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+              {foundations.length > 0 ? (
+                foundations.map((foundation) => (
+                  <div key={foundation.id} className="transform hover:scale-105 transition-all duration-300">
+                    <FoundationCard 
+                      foundation={foundation}
+                      onFavorite={handleFavorite}
+                      isFavorited={favorites.has(foundation.id)}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-16">
+                  <div className="glass rounded-2xl p-12 border border-white/20 shadow-xl backdrop-blur-xl max-w-md mx-auto">
+                    <div className="p-4 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                      <Search className="w-10 h-10 text-white" />
+                    </div>
+                    <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-gray-600 to-gray-800 bg-clip-text text-transparent">
+                      ไม่พบมูลนิธิที่คุณต้องการ
+                    </h2>
+                    <p className="text-muted-foreground text-lg leading-relaxed">
+                      ลองค้นหาด้วยคำคล้ายหรือเปลี่ยนตัวกรองดู
+                    </p>
+                  </div>
+                </div>
+              )}
+        </div>
+            </div>
+          </div>
+
+          {/* Enhanced Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center space-x-4 mb-8">
+              <div className="glass rounded-2xl p-4 border border-white/20 shadow-xl backdrop-blur-xl">
+                <div className="flex items-center space-x-3">
+                  <Button 
+                    variant="outline" 
+                    disabled={page === 1} 
+                    onClick={handlePrevPage}
+                    className="h-12 px-6 rounded-xl border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-2" />
+                    ก่อนหน้า
+                  </Button>
+                  
+                  <div className="flex items-center space-x-2">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (page <= 3) {
+                        pageNum = i + 1;
+                      } else if (page >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = page - 2 + i;
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={page === pageNum ? "default" : "outline"}
+                          onClick={() => setPage(pageNum)}
+                          className={`h-12 w-12 rounded-xl transition-all duration-200 ${
+                            page === pageNum 
+                              ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg' 
+                              : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    disabled={page === totalPages} 
+                    onClick={handleNextPage}
+                    className="h-12 px-6 rounded-xl border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    ถัดไป
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
-        </div>
-
-        {/* Pagination */}
-        <div className="flex justify-center space-x-2">
-          <Button variant="outline" disabled={page === 1} onClick={handlePrevPage}>ก่อนหน้า</Button>
-          <Button variant="default">{page}</Button>
-          <Button variant="outline" disabled={page === totalPages} onClick={handleNextPage}>ถัดไป</Button>
-        </div>
       </div>
     </Layout>
   );

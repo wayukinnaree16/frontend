@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { userService } from '@/services/user.service';
-import { publicService } from '@/services/public.service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
@@ -17,9 +16,7 @@ const Profile = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [pwForm, setPwForm] = useState({ current_password: '', new_password: '' });
   const [pwLoading, setPwLoading] = useState(false);
-  const [foundations, setFoundations] = useState<any[]>([]);
-  const [foundationsLoading, setFoundationsLoading] = useState(false);
-  const [foundationsError, setFoundationsError] = useState<string | null>(null);
+
 
   console.log('--- Profile component rendered ---');
   // ถ้า user login แล้วแต่ไม่ใช่ donor
@@ -64,32 +61,7 @@ const Profile = () => {
     };
     fetchUser();
 
-    // ดึงมูลนิธิที่ได้รับการอนุมัติ
-    const fetchFoundations = async () => {
-      setFoundationsLoading(true);
-      setFoundationsError(null);
-      console.log('fetchFoundations called');
-      try {
-        const res = await publicService.getFoundations({ page: 1, limit: 10 });
-        console.log('Foundations API response:', res);
-        // รองรับหลายโครงสร้าง
-        let foundationList = [];
-        if (Array.isArray(res.data?.foundations)) {
-          foundationList = res.data.foundations;
-        } else if (Array.isArray(res.data?.data)) {
-          foundationList = res.data.data;
-        } else if (Array.isArray(res.data)) {
-          foundationList = res.data;
-        }
-        setFoundations(foundationList);
-        console.log('foundations state after set:', foundationList);
-      } catch (e) {
-        setFoundationsError('เกิดข้อผิดพลาดในการโหลดรายชื่อมูลนิธิ');
-      } finally {
-        setFoundationsLoading(false);
-      }
-    };
-    fetchFoundations();
+
   }, []);
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,13 +87,39 @@ const Profile = () => {
 
   const handlePwSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // ตรวจสอบความถูกต้องของรหัสผ่านใหม่
+    if (pwForm.new_password.length < 8) {
+      toast({ 
+        title: 'รหัสผ่านไม่ถูกต้อง', 
+        description: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร',
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
+    if (pwForm.current_password === pwForm.new_password) {
+      toast({ 
+        title: 'รหัสผ่านไม่ถูกต้อง', 
+        description: 'รหัสผ่านใหม่ต้องแตกต่างจากรหัสผ่านปัจจุบัน',
+        variant: 'destructive' 
+      });
+      return;
+    }
+    
     setPwLoading(true);
     try {
       await userService.changePassword(pwForm);
       toast({ title: 'เปลี่ยนรหัสผ่านสำเร็จ' });
       setPwForm({ current_password: '', new_password: '' });
-    } catch {
-      toast({ title: 'เกิดข้อผิดพลาด', variant: 'destructive' });
+    } catch (error: any) {
+      console.error('Password change error:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน';
+      toast({ 
+        title: 'เกิดข้อผิดพลาด', 
+        description: errorMessage,
+        variant: 'destructive' 
+      });
     } finally {
       setPwLoading(false);
     }
@@ -130,7 +128,7 @@ const Profile = () => {
   if (loading) return <div className="text-center py-8">Loading...</div>;
   if (error || !user) return <div className="text-center py-8 text-red-500">{error || 'ไม่พบข้อมูล'}</div>;
 
-  console.log('Before main return: user:', user, 'foundations:', foundations);
+  console.log('Before main return: user:', user);
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -153,42 +151,32 @@ const Profile = () => {
             {editLoading ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
           </Button>
         </form>
-        <div className="border-t pt-6 mt-8">
-          <h2 className="text-xl font-semibold mb-4">มูลนิธิที่ได้รับการอนุมัติ</h2>
-          {foundationsLoading ? (
-            <div>กำลังโหลด...</div>
-          ) : foundationsError ? (
-            <div className="text-red-500">{foundationsError}</div>
-          ) : (
-            <div className="grid gap-4">
-              {foundations.length === 0 ? (
-                <div>
-                  ไม่พบมูลนิธิที่ได้รับการอนุมัติ<br/>
-                  <pre style={{fontSize:12, color:'#888', background:'#f5f5f5', padding:8, borderRadius:4}}>
-                    {JSON.stringify(foundations, null, 2)}
-                  </pre>
-                </div>
-              ) : (
-                foundations.map((f) => (
-                  <div key={f.foundation_id} className="flex items-center gap-3 p-2 border rounded">
-                    {f.logo_url && <img src={f.logo_url} alt={f.foundation_name} className="w-10 h-10 object-cover rounded-full" />}
-                    <span className="font-medium">{f.foundation_name}</span>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
+        
         <div className="border-t pt-6">
           <h2 className="text-xl font-semibold mb-4">เปลี่ยนรหัสผ่าน</h2>
           <form onSubmit={handlePwSubmit} className="space-y-4">
             <div>
               <label className="block mb-1 font-medium">รหัสผ่านปัจจุบัน</label>
-              <Input name="current_password" type="password" value={pwForm.current_password} onChange={handlePwChange} required />
+              <Input 
+                name="current_password" 
+                type="password" 
+                value={pwForm.current_password} 
+                onChange={handlePwChange} 
+                placeholder="กรอกรหัสผ่านปัจจุบัน"
+                required 
+              />
             </div>
             <div>
               <label className="block mb-1 font-medium">รหัสผ่านใหม่</label>
-              <Input name="new_password" type="password" value={pwForm.new_password} onChange={handlePwChange} required />
+              <Input 
+                name="new_password" 
+                type="password" 
+                value={pwForm.new_password} 
+                onChange={handlePwChange} 
+                placeholder="รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)"
+                required 
+              />
+              <p className="text-sm text-gray-500 mt-1">รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร</p>
             </div>
             <Button type="submit" className="w-full" disabled={pwLoading}>
               {pwLoading ? 'กำลังเปลี่ยน...' : 'เปลี่ยนรหัสผ่าน'}

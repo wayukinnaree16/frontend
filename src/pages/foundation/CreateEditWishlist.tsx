@@ -111,13 +111,13 @@ const CreateEditWishlist = () => {
         return;
       }
 
-      // Map frontend importance_level to backend urgency_level
-      const mapImportanceToUrgency = (importance: string): 'normal' | 'urgent' | 'very_urgent' | 'extremely_urgent' => {
-        if (importance === 'low') return 'normal';
-        if (importance === 'medium') return 'urgent'; // สำคัญ -> urgent
-        if (importance === 'high') return 'very_urgent'; // สำคัญมาก -> very_urgent
-        if (importance === 'urgent') return 'extremely_urgent'; // เร่งด่วน -> extremely_urgent
-        return 'urgent'; // default
+      // Map frontend priority_level to backend urgency_level
+      const mapPriorityToUrgency = (priority: string): 'normal' | 'urgent' | 'very_urgent' | 'extremely_urgent' => {
+        if (priority === 'low') return 'normal';
+        if (priority === 'medium') return 'urgent';
+        if (priority === 'high') return 'very_urgent';
+        if (priority === 'urgent') return 'extremely_urgent';
+        return 'normal'; // default
       };
 
       const submitData = {
@@ -125,7 +125,7 @@ const CreateEditWishlist = () => {
         description_detail: form.description_detail.trim(),
         quantity_needed: form.quantity_required,
         quantity_unit: form.quantity_unit === 'other' ? form.custom_unit.trim() : form.quantity_unit,
-        urgency_level: mapImportanceToUrgency(form.importance_level),
+        urgency_level: mapPriorityToUrgency(form.importance_level),
         category_id: form.category_id ? parseInt(form.category_id) : undefined,
         example_image_url: form.image_url.trim() ? form.image_url.trim() : undefined,
       };
@@ -136,7 +136,7 @@ const CreateEditWishlist = () => {
           description_detail: form.description_detail.trim(),
           quantity_needed: form.quantity_required,
           quantity_unit: form.quantity_unit === 'other' ? form.custom_unit.trim() : form.quantity_unit,
-          urgency_level: mapImportanceToUrgency(form.importance_level),
+          urgency_level: mapPriorityToUrgency(form.importance_level),
           category_id: form.category_id ? parseInt(form.category_id) : undefined,
           example_image_url: form.image_url.trim() ? form.image_url.trim() : undefined,
         };

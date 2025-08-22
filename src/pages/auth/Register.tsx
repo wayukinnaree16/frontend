@@ -30,12 +30,31 @@ const Register = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const validatePassword = (password: string) => {
+    if (password.length < 8) {
+      return 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร';
+    }
+    if (!/[a-zA-Z]/.test(password)) {
+      return 'รหัสผ่านต้องมีตัวอักษรอย่างน้อย 1 ตัว';
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!acceptTerms) {
       toast({
         title: 'กรุณายอมรับข้อตกลงและเงื่อนไข',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) {
+      toast({
+        title: passwordError,
         variant: 'destructive'
       });
       return;

@@ -67,7 +67,7 @@ export interface WishlistItem {
   quantity_needed: number;
   quantity_received: number;
   quantity_unit: string; // Added quantity_unit
-  urgency_level: 'normal' | 'urgent' | 'very_urgent'; // Changed from 'priority_level' and updated types
+  urgency_level: 'normal' | 'urgent' | 'very_urgent' | 'extremely_urgent'; // Changed from 'priority_level' and updated types
   status: 'open_for_donation' | 'fulfilled' | 'expired';
   example_image_url?: string; // Changed from 'images' to 'example_image_url'
   foundation?: Foundation;

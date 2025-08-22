@@ -82,10 +82,10 @@ const FoundationWishlist = () => {
       // Map backend urgency_level to frontend priority_level correctly
       const mapUrgencyToPriority = (urgency: string) => {
         if (urgency === 'normal') return 'low';
-        if (urgency === 'urgent') return 'medium'; // urgent -> สำคัญ
-        if (urgency === 'very_urgent') return 'high'; // very_urgent -> สำคัญมาก
-        if (urgency === 'extremely_urgent') return 'urgent'; // extremely_urgent -> เร่งด่วน
-        return 'medium';
+        if (urgency === 'urgent') return 'medium';
+        if (urgency === 'very_urgent') return 'high';
+        if (urgency === 'extremely_urgent') return 'urgent';
+        return 'low';
       };
       const mappedItems = apiItems.map((item: any) => ({
         id: item.wishlist_item_id,
@@ -138,10 +138,10 @@ const FoundationWishlist = () => {
     // Map backend urgency_level to frontend priority_level correctly
     const mapUrgencyToPriority = (urgency: string) => {
       if (urgency === 'normal') return 'low';
-      if (urgency === 'urgent') return 'medium'; // urgent -> สำคัญ
-      if (urgency === 'very_urgent') return 'high'; // very_urgent -> สำคัญมาก
-      if (urgency === 'extremely_urgent') return 'urgent'; // extremely_urgent -> เร่งด่วน
-      return 'medium'; // default
+      if (urgency === 'urgent') return 'medium';
+      if (urgency === 'very_urgent') return 'high';
+      if (urgency === 'extremely_urgent') return 'urgent';
+      return 'low'; // default
     };
     
     setForm({
@@ -224,10 +224,10 @@ const FoundationWishlist = () => {
       // Map frontend priority_level to backend urgency_level
       const mapPriorityToUrgency = (priority: string): 'normal' | 'urgent' | 'very_urgent' | 'extremely_urgent' => {
         if (priority === 'low') return 'normal';
-        if (priority === 'medium') return 'urgent'; // สำคัญ -> urgent
-        if (priority === 'high') return 'very_urgent'; // สำคัญมาก -> very_urgent  
-        if (priority === 'urgent') return 'extremely_urgent'; // เร่งด่วน -> extremely_urgent
-        return 'urgent'; // default
+        if (priority === 'medium') return 'urgent';
+        if (priority === 'high') return 'very_urgent';
+        if (priority === 'urgent') return 'extremely_urgent';
+        return 'normal'; // default
       };
 
       if (editing) {
@@ -249,10 +249,10 @@ const FoundationWishlist = () => {
           // Map backend urgency_level to frontend priority_level correctly
           const mapUrgencyToPriority = (urgency: string) => {
             if (urgency === 'normal') return 'low';
-            if (urgency === 'urgent') return 'medium'; // urgent -> สำคัญ
-            if (urgency === 'very_urgent') return 'high'; // very_urgent -> สำคัญมาก
-            if (urgency === 'extremely_urgent') return 'urgent'; // extremely_urgent -> เร่งด่วน
-            return 'medium';
+            if (urgency === 'urgent') return 'medium';
+            if (urgency === 'very_urgent') return 'high';
+            if (urgency === 'extremely_urgent') return 'urgent';
+            return 'low';
           };
           setItems(prev => prev.map(item =>
             item.id === updated.wishlist_item_id
@@ -283,10 +283,10 @@ const FoundationWishlist = () => {
         // Map frontend fields to backend schema for CREATE
         const mapPriorityToUrgency = (priority: string): 'normal' | 'urgent' | 'very_urgent' | 'extremely_urgent' => {
           if (priority === 'low') return 'normal';
-          if (priority === 'medium') return 'urgent'; // สำคัญ -> urgent
-          if (priority === 'high') return 'very_urgent'; // สำคัญมาก -> very_urgent
-          if (priority === 'urgent') return 'extremely_urgent'; // เร่งด่วน -> extremely_urgent
-          return 'urgent'; // default
+          if (priority === 'medium') return 'urgent';
+          if (priority === 'high') return 'very_urgent';
+          if (priority === 'urgent') return 'extremely_urgent';
+          return 'normal'; // default
         };
         const createBody = {
           item_name: form.title,
