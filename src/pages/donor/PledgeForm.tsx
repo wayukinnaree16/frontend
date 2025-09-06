@@ -144,7 +144,7 @@ const PledgeForm = () => {
       });
 
       // ส่งข้อมูลผ่าน FormData โดยใช้ apiClient
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/donor/pledges`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'https://backend-lcjt.onrender.com'}/api/donor/pledges`, {
         method: 'POST',
         body: formData,
         headers: {

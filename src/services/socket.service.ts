@@ -16,7 +16,7 @@ class SocketService {
       return;
     }
 
-    const serverUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+    const serverUrl = import.meta.env.VITE_API_BASE_URL || 'https://backend-lcjt.onrender.com';
     
     this.socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
