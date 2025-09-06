@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
-import { Package, Truck, CheckCircle, XCircle, Clock, Edit3, Star } from 'lucide-react';
+import { Package, Truck, CheckCircle, XCircle, Clock, Edit3, Star, Eye, X } from 'lucide-react';
 
 const MyPledges = () => {
   const [pledges, setPledges] = useState<any[]>([]);
@@ -15,6 +15,8 @@ const MyPledges = () => {
   const [error, setError] = useState<string | null>(null);
   const [trackingEdit, setTrackingEdit] = useState<{ id: number; courier_company_name: string; tracking_number: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedPledge, setSelectedPledge] = useState<any>(null);
+  const [pledgeDetailLoading, setPledgeDetailLoading] = useState(false);
   const navigate = useNavigate();
 
   const getStatusBadge = (status: string) => {
@@ -86,7 +88,7 @@ const MyPledges = () => {
     try {
       await donorService.cancelPledge(id);
       toast({ title: 'ยกเลิกการบริจาคแล้ว' });
-      setPledges(pledges => pledges.map(p => p.id === id ? { ...p, status: 'cancelled' } : p));
+      setPledges(pledges => pledges.map(p => p.pledge_id === id ? { ...p, status: 'cancelled' } : p));
     } catch {
       toast({ title: 'เกิดข้อผิดพลาด', variant: 'destructive' });
     } finally {
@@ -107,6 +109,18 @@ const MyPledges = () => {
       toast({ title: 'เกิดข้อผิดพลาด', variant: 'destructive' });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleViewDetails = async (pledgeId: number) => {
+    setPledgeDetailLoading(true);
+    try {
+      const response = await donorService.getPledgeById(pledgeId);
+      setSelectedPledge(response.data);
+    } catch {
+      toast({ title: 'เกิดข้อผิดพลาดในการโหลดรายละเอียด', variant: 'destructive' });
+    } finally {
+      setPledgeDetailLoading(false);
     }
   };
 
@@ -169,7 +183,7 @@ const MyPledges = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {pledges.map((p, idx) => (
-                    <tr key={p.id ? `pledge-${p.id}` : `pledge-row-${idx}`} className="hover:bg-gray-50 transition-colors">
+                    <tr key={p.pledge_id ? `pledge-${p.pledge_id}` : `pledge-row-${idx}`} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -191,14 +205,18 @@ const MyPledges = () => {
                       <td className="px-6 py-4">{getStatusBadge(p.status)}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleViewDetails(p.pledge_id)} className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" />
+                            ดูรายละเอียด
+                          </Button>
                           {p.status === 'pending_foundation_approval' && (
-                            <Button size="sm" variant="destructive" disabled={submitting} onClick={() => handleCancel(p.id)} className="flex items-center gap-1">
+                            <Button size="sm" variant="destructive" disabled={submitting} onClick={() => handleCancel(p.pledge_id)} className="flex items-center gap-1">
                               <XCircle className="w-3 h-3" />
                               ยกเลิก
                             </Button>
                           )}
                           {p.status === 'approved_by_foundation' && p.delivery_method === 'courier_service' && (
-                            trackingEdit && trackingEdit.id === p.id ? (
+                            trackingEdit && trackingEdit.id === p.pledge_id ? (
                               <div className="flex gap-2 items-center flex-wrap">
                                 <Input
                                   className="w-32"
@@ -212,7 +230,7 @@ const MyPledges = () => {
                                   value={trackingEdit.tracking_number}
                                   onChange={e => setTrackingEdit(te => te ? { ...te, tracking_number: e.target.value } : te)}
                                 />
-                                <Button size="sm" onClick={() => handleTrackingUpdate(p.id)} disabled={submitting} className="flex items-center gap-1">
+                                <Button size="sm" onClick={() => handleTrackingUpdate(p.pledge_id)} disabled={submitting} className="flex items-center gap-1">
                                   <CheckCircle className="w-3 h-3" />
                                   บันทึก
                                 </Button>
@@ -222,14 +240,14 @@ const MyPledges = () => {
                                 </Button>
                               </div>
                             ) : (
-                              <Button size="sm" variant="outline" onClick={() => setTrackingEdit({ id: p.id, courier_company_name: p.courier_company_name || '', tracking_number: p.tracking_number || '' })} className="flex items-center gap-1">
+                              <Button size="sm" variant="outline" onClick={() => setTrackingEdit({ id: p.pledge_id, courier_company_name: p.courier_company_name || '', tracking_number: p.tracking_number || '' })} className="flex items-center gap-1">
                                 <Edit3 className="w-3 h-3" />
                                 อัปเดตเลขพัสดุ
                               </Button>
                             )
                           )}
                           {p.status === 'received' && (
-                            <Button size="sm" variant="secondary" onClick={() => navigate(`/write-review?pledge_id=${p.id}`)} className="flex items-center gap-1">
+                            <Button size="sm" variant="secondary" onClick={() => navigate(`/write-review?pledge_id=${p.pledge_id}`)} className="flex items-center gap-1">
                               <Star className="w-3 h-3" />
                               เขียนรีวิว
                             </Button>
@@ -244,6 +262,186 @@ const MyPledges = () => {
           </div>
         )}
       </div>
+      
+      {/* Pledge Detail Modal */}
+      {selectedPledge && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <Package className="w-6 h-6 text-blue-600" />
+                  รายละเอียดการบริจาค
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedPledge(null)}>
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+              
+              {pledgeDetailLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">กำลังโหลดรายละเอียด...</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Item Information */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-800 mb-3">ข้อมูลสิ่งของ</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">ชื่อสิ่งของ</p>
+                        <p className="font-medium">{selectedPledge.wishlist_item?.item_name || 'ไม่ระบุ'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">หมวดหมู่</p>
+                        <p className="font-medium">
+                          {selectedPledge.wishlist_item?.category?.name || selectedPledge.wishlist_item?.category || 'ไม่ระบุ'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">จำนวนที่บริจาค</p>
+                        <p className="font-medium">{selectedPledge.quantity_pledged} ชิ้น</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">สถานะ</p>
+                        {getStatusBadge(selectedPledge.status)}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Foundation Information */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-800 mb-3">ข้อมูลมูลนิธิ</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">ชื่อมูลนิธิ</p>
+                        <p className="font-medium">{selectedPledge.foundation?.foundation_name || 'ไม่ระบุ'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">อีเมล</p>
+                        <p className="font-medium">{selectedPledge.foundation?.contact_email || 'ไม่ระบุ'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Delivery Information */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-800 mb-3">ข้อมูลการจัดส่ง</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-gray-600">วิธีการจัดส่ง</p>
+                        <p className="font-medium">
+                          {selectedPledge.delivery_method === 'courier_service' && 'บริการขนส่ง'}
+                          {selectedPledge.delivery_method === 'self_delivery' && 'จัดส่งเอง'}
+                          {selectedPledge.delivery_method === 'foundation_pickup' && 'มูลนิธิมารับ'}
+                        </p>
+                      </div>
+                      {selectedPledge.delivery_method === 'courier_service' && (
+                        <>
+                          <div>
+                            <p className="text-sm text-gray-600">บริษัทขนส่ง</p>
+                            <p className="font-medium">{selectedPledge.courier_company_name || 'ไม่ระบุ'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">เลขพัสดุ</p>
+                            <p className="font-medium">{selectedPledge.tracking_number || 'ไม่ระบุ'}</p>
+                          </div>
+                        </>
+                      )}
+                      {selectedPledge.delivery_method === 'foundation_pickup' && (
+                        <>
+                          <div>
+                            <p className="text-sm text-gray-600">ที่อยู่สำหรับรับ</p>
+                            <p className="font-medium">{selectedPledge.pickup_address_details || 'ไม่ระบุ'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-600">เวลาที่ต้องการ</p>
+                            <p className="font-medium">
+                              {selectedPledge.pickup_preferred_datetime 
+                                ? new Date(selectedPledge.pickup_preferred_datetime).toLocaleString('th-TH')
+                                : 'ไม่ระบุ'
+                              }
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Description */}
+                  {selectedPledge.donor_item_description && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-800 mb-3">รายละเอียดสิ่งของ</h3>
+                      <p className="text-gray-700">{selectedPledge.donor_item_description}</p>
+                    </div>
+                  )}
+                  
+                  {/* Pledge Item Images */}
+                  {selectedPledge.images && selectedPledge.images.length > 0 && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h3 className="font-semibold text-gray-800 mb-3">รูปภาพสิ่งของที่บริจาค</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {selectedPledge.images.map((image: any, index: number) => (
+                          <div key={image.pledge_image_id || index} className="relative group">
+                            <img
+                              src={image.image_url}
+                              alt={`รูปภาพสิ่งของที่บริจาค ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer"
+                              onClick={() => window.open(image.image_url, '_blank')}
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                              <Eye className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Timestamps */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-800 mb-3">ประวัติการดำเนินการ</h3>
+                    <div className="space-y-2">
+                      {selectedPledge.pledged_at && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">วันที่บริจาค:</span>
+                          <span className="font-medium">{new Date(selectedPledge.pledged_at).toLocaleString('th-TH')}</span>
+                        </div>
+                      )}
+                      {selectedPledge.approved_at && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">วันที่อนุมัติ:</span>
+                          <span className="font-medium">{new Date(selectedPledge.approved_at).toLocaleString('th-TH')}</span>
+                        </div>
+                      )}
+                      {selectedPledge.received_at && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">วันที่ได้รับ:</span>
+                          <span className="font-medium">{new Date(selectedPledge.received_at).toLocaleString('th-TH')}</span>
+                        </div>
+                      )}
+                      {selectedPledge.cancelled_at && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">วันที่ยกเลิก:</span>
+                          <span className="font-medium">{new Date(selectedPledge.cancelled_at).toLocaleString('th-TH')}</span>
+                        </div>
+                      )}
+                      {selectedPledge.rejected_at && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">วันที่ปฏิเสธ:</span>
+                          <span className="font-medium">{new Date(selectedPledge.rejected_at).toLocaleString('th-TH')}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
       <Footer />
     </div>
   );

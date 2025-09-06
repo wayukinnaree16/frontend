@@ -27,7 +27,27 @@ const Register = () => {
   const navigate = useNavigate();
 
   const handleInputChange = (field: string, value: string) => {
+    // ตรวจสอบ validation สำหรับฟิลด์ชื่อและนามสกุล
+    if (field === 'first_name' || field === 'last_name') {
+      if (!validateNameInput(value)) {
+        toast({
+          title: 'ไม่สามารถใส่ตัวอักษรพิเศษได้ กรุณากรอกใหม่อีกครั้ง',
+          variant: 'destructive'
+        });
+        return; // ไม่อัปเดต state ถ้า validation ไม่ผ่าน
+      }
+    }
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const validateNameInput = (value: string) => {
+    // อนุญาตเฉพาะตัวอักษรไทย อังกฤษ และช่องว่าง ห้ามใช้เครื่องหมายคำพูดและตัวอักษรพิเศษ
+    const nameRegex = /^[a-zA-Zก-๙\s]*$/;
+    // ตรวจสอบเครื่องหมายคำพูดเพิ่มเติม
+    if (value.includes("'") || value.includes('"')) {
+      return false;
+    }
+    return nameRegex.test(value);
   };
 
   const validatePassword = (password: string) => {
